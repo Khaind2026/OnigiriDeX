@@ -67,7 +67,7 @@ diff --git a/res/values-ar/strings.xml b/res/values-ar/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">إصدار الروم</string>
 +    <string name="onigiri_secure_ss_title">السماح بالتقاط صورة شاشة آمنة</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">إعدادات التضليل</string>
 +    <string name="onigiri_ss_detection_title">تعطيل اكتشاف أخذ لقطات الشاشة</string>
 +    <string name="onigiri_ui_settings_title">إعدادات واجهة المستخدم</string>
@@ -104,7 +104,7 @@ diff --git a/res/values-az-rAZ/strings.xml b/res/values-az-rAZ/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM versiyası</string>
 +    <string name="onigiri_secure_ss_title">Təhlükəsiz ekran görüntüsünə icazə ver</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Saxtakarlıq parametrləri</string>
 +    <string name="onigiri_ss_detection_title">Ekran görüntüsünün aşkarlanmasını deaktiv et</string>
 +    <string name="onigiri_ui_settings_title">İstifadəçi interfeysi parametrləri</string>
@@ -142,7 +142,7 @@ diff --git a/res/values-b+sr+Latn/strings.xml b/res/values-b+sr+Latn/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM verzija</string>
 +    <string name="onigiri_secure_ss_title">Dozvoli siguran snimak ekrana</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Korisna podešavanja</string>
 +    <string name="onigiri_ss_detection_title">Onemogući otkrivanje snimaka ekrana</string>
 +    <string name="onigiri_ui_settings_title">UI podešavanja</string>
@@ -179,7 +179,7 @@ diff --git a/res/values-bg/strings.xml b/res/values-bg/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM версия</string>
 +    <string name="onigiri_secure_ss_title">Позволяване на скрийншот в защитени приложения</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Spoof настройки</string>
 +    <string name="onigiri_ss_detection_title">Изключване на детекция на скрийншоти</string>
 +    <string name="onigiri_ui_settings_title">UI настройки</string>
@@ -216,7 +216,7 @@ diff --git a/res/values-de/strings.xml b/res/values-de/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM-Version</string>
 +    <string name="onigiri_secure_ss_title">Sicheren Screenshot erlauben</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Spoofing-Einstellungen</string>
 +    <string name="onigiri_ss_detection_title">Screenshot-Erkennung deaktivieren</string>
 +    <string name="onigiri_ui_settings_title">UI-Einstellungen</string>
@@ -254,7 +254,7 @@ diff --git a/res/values-en-rCA/strings.xml b/res/values-en-rCA/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM version</string>
 +    <string name="onigiri_secure_ss_title">Allow secure screenshot</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Spoof settings</string>
 +    <string name="onigiri_ss_detection_title">Disable screenshot detection</string>
 +    <string name="onigiri_ui_settings_title">UI settings</string>
@@ -292,7 +292,7 @@ diff --git a/res/values-en-rPH/strings.xml b/res/values-en-rPH/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM version</string>
 +    <string name="onigiri_secure_ss_title">Allow secure screenshot</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Spoof settings</string>
 +    <string name="onigiri_ss_detection_title">Disable screenshot detection</string>
 +    <string name="onigiri_ui_settings_title">UI settings</string>
@@ -330,7 +330,7 @@ diff --git a/res/values-en-rUS/strings.xml b/res/values-en-rUS/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM version</string>
 +    <string name="onigiri_secure_ss_title">Allow secure screenshot</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Spoof settings</string>
 +    <string name="onigiri_ss_detection_title">Disable screenshot detection</string>
 +    <string name="onigiri_ui_settings_title">UI settings</string>
@@ -368,7 +368,7 @@ diff --git a/res/values-en-rZG/strings.xml b/res/values-en-rZG/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM version</string>
 +    <string name="onigiri_secure_ss_title">Allow secure screenshot</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Spoof settings</string>
 +    <string name="onigiri_ss_detection_title">Disable screenshot detection</string>
 +    <string name="onigiri_ui_settings_title">UI settings</string>
@@ -406,7 +406,7 @@ diff --git a/res/values-en/strings.xml b/res/values-en/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM version</string>
 +    <string name="onigiri_secure_ss_title">Allow secure screenshot</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Spoof settings</string>
 +    <string name="onigiri_ss_detection_title">Disable screenshot detection</string>
 +    <string name="onigiri_ui_settings_title">UI settings</string>
@@ -444,7 +444,7 @@ diff --git a/res/values-es-rES/strings.xml b/res/values-es-rES/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Versión de ROM</string>
 +    <string name="onigiri_secure_ss_title">Permitir capturas de pantalla en cualquier aplicación</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Ajustes de suplantación</string>
 +    <string name="onigiri_ss_detection_title">Deshabilitar detección de capturas de pantalla en aplicaciones</string>
 +    <string name="onigiri_ui_settings_title">Ajustes de la interfaz de usuario</string>
@@ -482,7 +482,7 @@ diff --git a/res/values-es-rUS/strings.xml b/res/values-es-rUS/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Versión de ROM</string>
 +    <string name="onigiri_secure_ss_title">Permitir capturas de pantalla en cualquier aplicación</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Ajustes de suplantación</string>
 +    <string name="onigiri_ss_detection_title">Deshabilitar detección de capturas de pantalla en aplicaciones</string>
 +    <string name="onigiri_ui_settings_title">Ajustes de la interfaz de usuario</string>
@@ -519,7 +519,7 @@ diff --git a/res/values-fa/strings.xml b/res/values-fa/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">نسخه رام</string>
 +    <string name="onigiri_secure_ss_title">اجازه عکس گرفتن از صفحه بدون محدودیت</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">تنظیمات اسپوف</string>
 +    <string name="onigiri_ss_detection_title">غیرفعال کردن تشخیص عکس گرفتن از صفحه</string>
 +    <string name="onigiri_ui_settings_title">تنظیمات یوآی</string>
@@ -557,7 +557,7 @@ diff --git a/res/values-fr/strings.xml b/res/values-fr/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Version de la ROM</string>
 +    <string name="onigiri_secure_ss_title">Autoriser la capture d\'écran sécurisée</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Paramètres d\'usurpation</string>
 +    <string name="onigiri_ss_detection_title">Désactiver la détection de capture d\'écran</string>
 +    <string name="onigiri_ui_settings_title">Paramètres de l\'interface utilisateur</string>
@@ -595,7 +595,7 @@ diff --git a/res/values-hu/strings.xml b/res/values-hu/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM verziója</string>
 +    <string name="onigiri_secure_ss_title">Biztonságos képernyőfotó engedélyezése</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Spoof beállítások</string>
 +    <string name="onigiri_ss_detection_title">Képernyőkép észlelésének letiltása</string>
 +    <string name="onigiri_ui_settings_title">UI beállítások</string>
@@ -632,7 +632,7 @@ diff --git a/res/values-in/strings.xml b/res/values-in/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Versi ROM</string>
 +    <string name="onigiri_secure_ss_title">Izinkan tangkapan layar aman</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Pengaturan spoof</string>
 +    <string name="onigiri_ss_detection_title">Non-aktifkan deteksi tangkapan layar</string>
 +    <string name="onigiri_ui_settings_title">Pengaturan UI</string>
@@ -670,7 +670,7 @@ diff --git a/res/values-it/strings.xml b/res/values-it/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Versione ROM</string>
 +    <string name="onigiri_secure_ss_title">Disattiva criteri di protezione screenshot</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Opzioni spoofing</string>
 +    <string name="onigiri_ss_detection_title">Disattiva rilevamento screenshot</string>
 +    <string name="onigiri_ui_settings_title">Opzioni interfaccia</string>
@@ -708,7 +708,7 @@ diff --git a/res/values-pl/strings.xml b/res/values-pl/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Wersja ROMu</string>
 +    <string name="onigiri_secure_ss_title">Zezwól na poufne zrzuty ekranu</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Ustawienia spoofingu</string>
 +    <string name="onigiri_ss_detection_title">Wyłącz wykrywanie zrzutów ekranu</string>
 +    <string name="onigiri_ui_settings_title">Ustawienia interfejsu</string>
@@ -746,7 +746,7 @@ diff --git a/res/values-pt-rBR/strings.xml b/res/values-pt-rBR/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Versão da ROM</string>
 +    <string name="onigiri_secure_ss_title">Permitir captura de tela segura</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Configurações de spoof</string>
 +    <string name="onigiri_ss_detection_title">Desabilitar detecção de captura de tela</string>
 +    <string name="onigiri_ui_settings_title">Configurações da interface</string>
@@ -784,7 +784,7 @@ diff --git a/res/values-pt-rPT/strings.xml b/res/values-pt-rPT/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Versão da ROM</string>
 +    <string name="onigiri_secure_ss_title">Permitir captura de tela segura</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Configurações de spoof</string>
 +    <string name="onigiri_ss_detection_title">Desabilitar detecção de captura de tela</string>
 +    <string name="onigiri_ui_settings_title">Configurações da interface</string>
@@ -821,7 +821,7 @@ diff --git a/res/values-ro/strings.xml b/res/values-ro/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Versiune ROM</string>
 +    <string name="onigiri_secure_ss_title">Permite captură de ecran securizată</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Falsificarea setărilor</string>
 +    <string name="onigiri_ss_detection_title">Dezactivare detectare a capturilor de ecran</string>
 +    <string name="onigiri_ui_settings_title">Setări IU</string>
@@ -858,7 +858,7 @@ diff --git a/res/values-ru/strings.xml b/res/values-ru/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Версия прошивки</string>
 +    <string name="onigiri_secure_ss_title">Разрешить делать скриншот, если запрещено безопасностью</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Настройки подмены</string>
 +    <string name="onigiri_ss_detection_title">Отключить обнаружение скриншота</string>
 +    <string name="onigiri_ui_settings_title">Настройки пользовательского интерфейса</string>
@@ -895,7 +895,7 @@ diff --git a/res/values-sq-rAL/strings.xml b/res/values-sq-rAL/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Versioni i ROM</string>
 +    <string name="onigiri_secure_ss_title">Lejo pamjen e çastit të sigurt</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Cilësimet e maskimit</string>
 +    <string name="onigiri_ss_detection_title">Çaktivizo zbulimin e pamjes së çastit</string>
 +    <string name="onigiri_ui_settings_title">Cilësimet e UI</string>
@@ -933,7 +933,7 @@ diff --git a/res/values-sr/strings.xml b/res/values-sr/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM верзија</string>
 +    <string name="onigiri_secure_ss_title">Дозволи сигуран снимак екрана</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Корисна подешавања</string>
 +    <string name="onigiri_ss_detection_title">Онемогући откривање снимка екрана</string>
 +    <string name="onigiri_ui_settings_title">UI подешавања</string>
@@ -969,7 +969,7 @@ diff --git a/res/values-th/strings.xml b/res/values-th/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">เวอรชั่นรอม</string>
 +    <string name="onigiri_secure_ss_title">อนุญาตให้ถ่ายภาพหน้าจอในแอพที่ไม่อนุญาต</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">การตั้งค่าสปูฟ</string>
 +    <string name="onigiri_ss_detection_title">ปิดการใช้งานตัวตรวจจับการถ่ายภาพหน้าจอสำหรับแอพ</string>
 +    <string name="onigiri_ui_settings_title">การตั้งค่า UI</string>
@@ -1007,7 +1007,7 @@ diff --git a/res/values-tr/strings.xml b/res/values-tr/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM sürümü</string>
 +    <string name="onigiri_secure_ss_title">Güvenli uygulamalarda ekran görüntülerine izin ver</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Sistem aldatma ayarları</string>
 +    <string name="onigiri_ss_detection_title">Ekran görüntüsü tespitini devre dışı bırak</string>
 +    <string name="onigiri_ui_settings_title">Arayüz Ayarları</string>
@@ -1045,7 +1045,7 @@ diff --git a/res/values-uk/strings.xml b/res/values-uk/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Версія Onigiri</string>
 +    <string name="onigiri_secure_ss_title">Вимкнути заборону скріншота в додатках</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Налаштування виявлення</string>
 +    <string name="onigiri_ss_detection_title">Вимкнути виявлення скріншотів</string>
 +    <string name="onigiri_ui_settings_title">Налаштування інтерфейсу</string>
@@ -1083,7 +1083,7 @@ diff --git a/res/values-vi/strings.xml b/res/values-vi/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">Phiên bản ROM</string>
 +    <string name="onigiri_secure_ss_title">Cho phép chụp màn hình ở mọi ứng dụng</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_spoof_settings_title">Ngụy trang</string>
 +    <string name="onigiri_ss_detection_title">Không cho ứng dụng biết khi chụp màn hình</string>
 +    <string name="onigiri_ui_settings_title">Giao diện</string>
@@ -1166,7 +1166,7 @@ diff --git a/res/values/strings.xml b/res/values/strings.xml
 +    <string name="onigiri_pif_version_title">Play Integrity Fix</string>
 +    <string name="onigiri_rom_version_title">ROM version</string>
 +    <string name="onigiri_secure_ss_title">Allow secure screenshot</string>
-+    <string name="onigiri_settings_title">Onigiri Software</string>
++    <string name="onigiri_settings_title">DK điều chỉnh</string>
 +    <string name="onigiri_settings_summary">Extra features</string>
 +    <string name="onigiri_spoof_settings_title">Spoof settings</string>
 +    <string name="onigiri_ss_detection_title">Disable screenshot detection</string>

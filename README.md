@@ -103,7 +103,7 @@ Samsung's own software needs. Never flash Fold5 files. The first start takes a
 few minutes.
 
 **Updating.** The phone tells you when a new version is out. Open the
-notification, or **Settings → Onigiri Software → Software update**, to see
+notification, or **Settings → DK điều chỉnh → Software update**, to see
 what's new, then tap **Download and install**: the phone downloads only what
 changed, restarts, installs it in about a minute and starts again. Your data
 stays, and it works from any recent version, not just the one before. If your
@@ -184,12 +184,12 @@ A few things to keep in mind:
 
 ## Extra features
 
-Onigiri's own settings live in **Settings → Onigiri Software**, in English or
+Onigiri's own settings live in **Settings → DK điều chỉnh**, in English or
 Vietnamese following the phone's language. Here's what each part does.
 
 ### DeX zones
 
-![Zone layouts in Onigiri Software](docs/images/onigiri-settings-zones.png)
+![Zone layouts in DK điều chỉnh](docs/images/onigiri-settings-zones.png)
 
 Off by default. Zones split the monitor into fixed areas, like a map on one
 side and other apps next to it. You can pick a map on the left or right, three
@@ -290,7 +290,7 @@ charges and back on when charging stops, if it was on before.
 while the phone charges. In stock Android it only stops the screen from
 turning off, and the screen still dims at the screen timeout.
 
-The experimental [High performance option](docs/thermal.md) in Onigiri Software is
+The experimental [High performance option](docs/thermal.md) in DK điều chỉnh is
 off by default, with English and Vietnamese text. With an external cooler, it
 keeps DeX at a steady 144 Hz (143 fps instead of 127–131 in TestUFO) and holds
 higher clocks under sustained load, without raising peak clocks. Restart to apply.
@@ -330,7 +330,7 @@ higher clocks under sustained load, without raising peak clocks. Restart to appl
 
 ### Built-in components
 
-**Settings → Onigiri Software** has a switch and a page for each component.
+**Settings → DK điều chỉnh** has a switch and a page for each component.
 The switch saves your choice; Status shows what is running. Switch changes
 and component updates take effect after a restart.
 
