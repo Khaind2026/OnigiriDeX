@@ -5,7 +5,7 @@ This helper builds two separate Odin AP archives: SM-F731B (international/XXV) a
 ## Requirements
 
 - Linux with Bash, Python 3, Java and the native Android build dependencies listed in .github/workflows/release.yml. This release workflow uses Debian 13 / OpenJDK 21. On Windows, run an appropriate Linux build environment (such as WSL2 Debian 13), not PowerShell directly.
-- Plenty of time and disk space (plan for 150 GiB free or more for a first build). Keep the checkout on a Linux filesystem rather than /mnt/c for performance.
+- Plenty of time and disk space (the helper requires at least 150 GiB free; this is a planning minimum, not a measured peak). Keep the checkout on a Linux filesystem rather than /mnt/c for performance.
 - Clone with all submodules: git clone --recurse-submodules https://github.com/Khaind2026/OnigiriDeX.git
 - Three FULL original Samsung firmware ZIP archives containing AP, BL, CP, CSC, matching the versions pinned in onigiri/configs/firmware.json.
 
@@ -14,15 +14,15 @@ Required versions:
 - SM-F731B / XXV: F731BXXS5EYI1
 - SM-F731N / KOO: F731NKSS5EYGB
 - SM-F946B / XXV donor: F946BXXS5EYI1
-- Optional SM-S921B / XXV: S921BXXS9BYH1 (additional display-colour assets).
+- Required SM-S921B / XXV: S921BXXS9BYH1 (adaptive display-colour assets). Only the ZIP argument may be omitted when `out/fw/SM-S921B_XXV/software` already passes manifest verification.
 
 ## Run locally
 
 From the checkout root, run:
 
-    bash scripts/build_dk_both_flip5.sh /path/F731B.zip /path/F731N.zip /path/F946B.zip
+    bash scripts/build_dk_both_flip5.sh /path/F731B.zip /path/F731N.zip /path/F946B.zip /path/S921B.zip
 
-Optionally pass the S24 ZIP as a fourth argument. The archive path may point to /mnt/d/... when accessing Windows files from WSL2.
+The Eureka module requires the S24 assets; they are not an optional feature in this build. Pass the S24 ZIP as the fourth argument on a clean checkout. The archive path may point to /mnt/d/... when accessing Windows files from WSL2.
 
 scripts/import_fw.py checks the COMPLETE ZIP MD5 against the pinned official build; the model name alone does not guarantee a match. If the MD5 is different, the script deliberately stops. Do not bypass this check to produce an unverified ROM.
 
@@ -42,3 +42,52 @@ The existing .github/workflows/release.yml can build both models on a pushed tag
 Back up the locally generated security/onigiri_platform.* and security/onigiri_ota.* keypairs. Do not put private keys, Samsung firmware archives, or other copyrighted binary firmware in the public Git repository. Use only software and firmware you are authorized to modify.
 
 Use the corresponding model's factory BL/CP/CSC for installation and keep full original firmware and data backups. Building does not guarantee the resulting ROM has been tested on real hardware.
+
+## Windows / WSL2 build host
+
+Work cannot read your Windows drives directly. Keep the original ZIPs on your PC and build
+on a Debian 13 WSL2 instance with at least 150 GiB free in the checkout filesystem.
+Use a larger Linux host if the WSL filesystem cannot provide that space. Allow additional
+space for the original ZIPs if they live on the same filesystem. 16 GiB RAM plus swap is
+recommended for the kernel; this is guidance, not a validated minimum.
+
+In Administrator PowerShell, install WSL Debian if it is not installed:
+
+```powershell
+wsl --install -d Debian
+```
+
+Then in Debian, confirm `cat /etc/os-release` reports Debian 13 and run:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y git ca-certificates
+mkdir -p ~/src
+cd ~/src
+git clone https://github.com/Khaind2026/OnigiriDeX.git
+cd OnigiriDeX
+sudo bash scripts/setup_dk_debian.sh
+git submodule update --init --recursive
+df -h .
+set -o pipefail
+bash scripts/build_dk_both_flip5.sh \
+  /mnt/d/Firmware/F731B.zip /mnt/d/Firmware/F731N.zip \
+  /mnt/d/Firmware/F946B.zip /mnt/d/Firmware/S921B.zip 2>&1 | tee dk-build.log
+```
+
+Replace the four paths with the actual original filenames. Do not re-zip extracted files:
+the first three archives must match the pinned whole-ZIP MD5. Their AP, BL, CP and CSC
+packages are all required by the importer. `extract_fw.sh` reads BL for `vbmeta`; producing
+an AP-only output does not remove the BL input requirement.
+
+For a remote build host, transfer the ZIPs via a private authenticated channel (for example
+SFTP), preserve their names and compare checksums at both ends. Do not commit firmware or
+keys to this public repository. Keep signing keys on the build host and preserve existing
+keys if this ROM must update an earlier installation. Neither this helper nor the setup
+script publishes a release or flashes a device.
+
+`build_odin.sh` already verifies the seven AP members, LZ4 headers and image sizes, repacks
+and unpacks super to compare each partition hash, verifies the Odin MD5 trailer, and writes
+a SHA-256 sidecar. These are build-artifact checks, not evidence of a successful device boot.
+The helper's final glob lists existing outputs as well; use the commit/version in each
+filename and the successful build log to identify outputs of the current run.
