@@ -65,7 +65,7 @@ Run these **read-only** checks to locate firmware:
 ```bash
 cd ~/OnigiriDeX
 git status --short
-find /mnt/d -maxdepth 5 -type f \\( -iname 'AP_F741N*.tar.md5' -o -iname 'AP_F956B*.tar.md5' -o -iname '*F741N*.zip' -o -iname '*F956B*.zip' \\) -print 2>/dev/null
+find /mnt/d -maxdepth 5 -type f \( -iname 'AP_F741N*.tar.md5' -o -iname 'AP_F956B*.tar.md5' -o -iname '*F741N*.zip' -o -iname '*F956B*.zip' \) -print 2>/dev/null
 ```
 
 Confirm target bootloader binary and exact F741N/F956B Android 15 software versions before changing build code.
