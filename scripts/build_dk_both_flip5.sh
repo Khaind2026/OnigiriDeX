@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # Build Odin AP packages for both Z Flip5 models with exact pinned firmware.
-# Usage: bash scripts/build_dk_both_flip5.sh B.zip N.zip Fold5.zip [S24.zip]
+# Usage: bash scripts/build_dk_both_flip5.sh B_folder N_folder Fold5_folder [S24.zip]
 set -eo pipefail
 
 if (( $# < 3 || $# > 4 )); then
-  echo "Usage: bash scripts/build_dk_both_flip5.sh F731B.zip F731N.zip F946B.zip [S921B.zip]" >&2
+  echo "Usage: bash scripts/build_dk_both_flip5.sh <F731B-folder-or-ZIP> <F731N-folder-or-ZIP> <F946B-folder-or-ZIP> [S921B.zip]" >&2
   exit 2
 fi
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
-B_ZIP="$(realpath -e "$1")"
-N_ZIP="$(realpath -e "$2")"
-DONOR_ZIP="$(realpath -e "$3")"
+B_INPUT="$(realpath -e "$1")"
+N_INPUT="$(realpath -e "$2")"
+DONOR_INPUT="$(realpath -e "$3")"
 S24_ZIP=""
 if (( $# == 4 )); then S24_ZIP="$(realpath -e "$4")"; fi
 
@@ -27,21 +27,25 @@ source ./buildenv.sh SM-F731B
 onigiri build_dependencies
 
 import_once() {
-  local ROLE="$1" ZIP="$2" DEST="$3"
+  local ROLE="$1" INPUT="$2" DEST="$3"
   if [ -f "$DEST/.downloaded" ]; then
     echo "Already imported $ROLE; extract_fw verifies pinned firmware."
   elif [ -e "$DEST" ]; then
     echo "Incomplete import directory $DEST; investigate before retrying." >&2
     exit 1
   else
-    python3 scripts/import_fw.py "$ROLE" "$ZIP"
+    if [ -d "$INPUT" ]; then
+      python3 scripts/import_fw_dir.py "$ROLE" "$INPUT"
+    else
+      python3 scripts/import_fw.py "$ROLE" "$INPUT"
+    fi
   fi
 }
 
-echo "[2/7] Import exact firmware archives (MD5 checked)"
-import_once SM-F731B "$B_ZIP" out/odin/SM-F731B_XXV
-import_once SM-F731N "$N_ZIP" out/odin/SM-F731N_KOO
-import_once donor "$DONOR_ZIP" out/odin/SM-F946B_XXV
+echo "[2/7] Import exact firmware ZIPs or extracted Odin directories (MD5 checked)"
+import_once SM-F731B "$B_INPUT" out/odin/SM-F731B_XXV
+import_once SM-F731N "$N_INPUT" out/odin/SM-F731N_KOO
+import_once donor "$DONOR_INPUT" out/odin/SM-F946B_XXV
 
 echo "[3/7] Extract international Flip5 and donor firmware"
 onigiri extract_fw

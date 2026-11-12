@@ -24,7 +24,21 @@ From the checkout root, run:
 
 Optionally pass the S24 ZIP as a fourth argument. The archive path may point to /mnt/d/... when accessing Windows files from WSL2.
 
-scripts/import_fw.py checks the COMPLETE ZIP MD5 against the pinned official build; the model name alone does not guarantee a match. If the MD5 is different, the script deliberately stops. Do not bypass this check to produce an unverified ROM.
+### Directly using unpacked firmware (no ZIP needed)
+
+If the three firmware sets are already unpacked on the Windows D: drive into AP, BL, CP and CSC tar.md5 files, use their **directory paths** instead:
+
+```bash
+bash scripts/build_dk_both_flip5.sh \
+  '/mnt/d/FLip5/SAMFW.COM_SM-F731B_XXV_F731BXXS5EYI1_fac' \
+  '/mnt/d/FLip5/SAMFW.COM_SM-F731N_SKC_F731NKSS5EYGB_fac' \
+  '/mnt/d/f5/SAMFW.COM_SM-F946B_XXV_F946BXXS5EYI1_fac'
+```
+
+The F731N directory may be labeled SKC by the download source, while its Odin CSC package is `CSC_OKR_F731NOKR5EYGB_...`; the package names inside the folder must match the pinned versions. Directory names themselves are not trusted as proof of validity.
+
+
+For a complete ZIP, scripts/import_fw.py checks the ZIP's pinned MD5 and the internal Odin checksums. For extracted directories, scripts/import_fw_dir.py requires matching AP, BL, CP and CSC filenames/versions and validates each .tar.md5 package's own MD5 before making links (no duplicate large file copies). It cannot check the MD5 of the original ZIP because the ZIP is not supplied. Keep the firmware directories on the D: drive accessible until extraction is complete. If the versions or checksums do not match, the script stops.
 
 The helper builds dependencies, imports and extracts the firmware, builds the shared kernel, and creates one AP for SM-F731B and one for SM-F731N using the repository's existing onigiri build_odin path.
 
