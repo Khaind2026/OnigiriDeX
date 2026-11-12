@@ -1,69 +1,72 @@
-# DK điều chỉnh — SM-F741N (b6q), Android 15 / One UI 7: port plan
+# DK điều chỉnh — SM-F741N / Z Flip6 Android 15 (One UI 7), Fold6 donor port
 
-**Status:** planning only. The current ROM build supports SM-F731B / SM-F731N (`b5q`). No F741N AP has been built, validated, or flashed. Keep this work on `dk-f741n-oneui7-port`; do not change the Flip5 release pipeline until the F741N build has independent tests.
+**Status:** research and planning. **Not built or tested.** This is an experimental **Fold6-to-Flip6 system port**, preserving the Flip6 boot chain and hardware-specific firmware. Maintain on branch `dk-f741n-oneui7-port`; do not copy b5q binaries or merge into Flip5 release pipeline.
 
-## 0. Confirm device and baseline
+## Why Fold6 donor
 
-- Read the *current* SM-F741N build, bootloader revision, CSC, Android version, kernel release and bootloader lock state (Android Settings/Download Mode, or read-only `adb shell getprop`/`uname -r`).
-- Pick an official **SM-F741N** Android 15 / One UI 7 full firmware set with a compatible bootloader revision. Example reference: F741NKSU2BYCJ / F741NOKR2BYCJ (KOO, bootloader binary 2). This is not a safe target for a phone already on a higher bootloader binary.
-- Retain verified originals of AP, BL, CP, CSC and an independent user-data backup. No files from a different model are suitable for the boot chain, modem or device-specific partitions.
-- Collect original Odin package checksums; never flash an unverified package.
+The existing OnigiriDeX Z Flip5 build uses:
+- **System-side donor: SM-F946B (Z Fold5, q5q)** — `system`, `product`, and `system_ext` from `scripts/internal/create_work_dir.sh`.
+- **Hardware target: SM-F731B/N (Z Flip5, b5q)** — `vendor`, `odm`, `vendor_dlkm`, `odm_dlkm`, `system_dlkm`, `boot`, `vendor_boot`, `dtbo`, `recovery`, and `vbmeta` from target or its matching rebuilt kernel.
+- Device-specific patches adapt settings, external/cover displays and DeX.
 
-## 1. Inspect firmware, no flash
+For a matching new-generation device pair, **propose SM-F956B (Z Fold6, q6q) Android 15 / One UI 7 as donor** and **SM-F741N (Z Flip6, b6q) Android 15 / One UI 7 as hardware target**. Both are Snapdragon 8 Gen 3 devices, but a shared SoC does **not** guarantee framework/vendor compatibility.
 
-- Work with the existing Debian 13/WSL2 toolchain, and reserve disk space.
-- Inspect AP and BL archive member names, partition images, `lpdump` output for `super`, filesystem types, partition list and group size, target build properties, VINTF compatibility, and original `boot`, `init_boot`, `vendor_boot`, `dtbo`, `vbmeta`, `vendor_dlkm`, `system_dlkm`, recovery.
-- Record the actual b6q partition map and metadata. Never reuse the b5q hard-coded super partition sizes or assumptions.
+**Not** a direct replacement of `F946B` with `F956B` in `firmware.json`: current scripts have hard-coded b5q assumptions.
 
-## 2. Device-specific branch
+## 1. Confirm actual firmware and phone
 
-- Create `target/b6q/config.sh` based on **measured F741N properties**, not copied b5q guesses.
-- Extend `onigiri/configs/firmware.json` and `buildenv.sh` to select SM-F741N and new b6q paths without affecting SM-F731B/N.
-- Generalize `scripts/internal/gen_config_file.sh`, `scripts/make_rom.sh`, `scripts/build_odin.sh`, and release/test logic to separate b5q and b6q output directories and constraints. Use real F741N partition metadata.
-- Start with a **stock-F741N-based experimental build** (no Fold5 donor, no b5q-only patches), then add compatible changes incrementally.
+- Read F741N model, Android/One UI, incremental build, CSC and **bootloader binary** from the actual phone; avoid binary downgrade or mixing base revisions.
+- Select a full official **SM-F741N** Android 15 image for the hardware target and an **SM-F956B** Android 15 / One UI 7 image for the donor. Do not pick mismatched Android major versions.
+- Example Fold6 Android 15 donor candidate: `F956BXXU2BYD9` (candidate, not yet selected or pinned); exact donor build, CSC, patch level and compatibility must be verified against the target.
+- Verify the complete Odin AP/BL/CP/CSC packages. Store matching original firmware and an independent backup.
+- Avoid flashing stock donor Fold6 AP, bootloader, modem, `vendor`, `dtbo`, `vbmeta`, or kernel to a Flip6.
 
-## 3. Kernel: first preserve stock
+## 2. Non-destructive firmware inventory
 
-- First milestone: preserve the original **F741N** kernel, device trees and modules from the matching stock AP, and validate hashes/boot layout. This reduces variables.
-- Only after baseline verification, obtain model/build-matched Samsung kernel source from Samsung Open Source Release Center (or an independently verified mirror), inspect its `build.sh` and matching toolchain, compile/test independently.
-- Never reuse `external/kernel` (currently SM8550/Flip5) or `out/target/b5q/kernel` as b6q images. The current 5.15 build/kernel packaging asserts b5q and cannot be repurposed by renaming.
-- Put b6q kernel changes in a separate source pin/patch directory with reproducible checksums; KernelSU/susFS is a separate later milestone.
+- Inspect F741N and F956B AP and BL metadata and their `system`, `product`, `system_ext`, `vendor`, `odm`, `vendor_dlkm`, `system_dlkm`, `boot`, `init_boot`, `vendor_boot`, `dtbo`, `recovery`, `vbmeta` images.
+- Extract target `super` metadata with `lpdump`: actual partition list, slot/virtual A/B layout, total/group sizes and filesystem types. Never reuse the b5q fixed sizes or assume a matching partition layout.
+- Compare Fold6 system services/framework, permissions, feature flags, VINTF matrix, shipping API and security patch, plus proprietary feature dependencies, against Flip6 vendor.
+- Record SELinux labels, `fs_config` and framework dependencies before any integration.
 
-## 4. Android 15 / One UI 7 patches
+## 3. New device-specific build path
 
-- Begin with cosmetics (DK điều chỉnh) and settings changes only after validating APK/JAR versions.
-- Port patches only when their exact target smali methods, resource IDs, SELinux contexts, overlays and required files exist in the F741N base.
-- DeX output, cover display, HDMI mirror/120 Hz, camera and thermal patches are independent experimental features requiring instrumented tests. Do not assume b5q patches apply unchanged.
-- Keep Eureka optional: the current module requires additional verified S24 adaptive display assets.
+- Add `target/b6q/config.sh` only after reading real F741N firmware properties; add a model-specific donor mapping `SM-F741N -> SM-F956B` in the firmware configuration.
+- Refactor `buildenv.sh`, `gen_config_file.sh`, `create_work_dir.sh`, `make_rom.sh`, `build_odin.sh`, and validation/release scripts so b5q and b6q have independent config/work/output directories. Do not loosen the original b5q assertion without adding equivalent b6q checks.
+- Extend the donor/target composition pattern: Fold6 `system`/`product`/`system_ext`, Flip6 `vendor`/`odm`/`*_dlkm` and hardware-specific partitions.
+- Start with a minimal hybrid build (no unrelated Fold5 patches), prove partition compatibility and image integrity, then port modifications incrementally.
 
-## 5. Build gates before any device flash
+## 4. Kernel
 
-1. Static tests: script syntax, configuration checks, patch integrity, APK/JAR recompilation.
-2. Validate image contents, filesystem metadata, SELinux labels, partition sizes, AVB/boot chain compatibility and exact target model.
-3. Produce an F741N-specific Odin AP in a separate output directory; validate tar member names, image checksums and a round-trip `super` unpack.
-4. Retain full matching original firmware and a device recovery plan. Flash only after the owner explicitly approves and confirms device model/bootloader compatibility.
-5. Check first boot, touch and folded-panel behavior, radio, cameras, Wi-Fi, thermals, USB, external display, DeX, and OTA separately.
+- For the first experiment keep the **exact F741N kernel/boot images, device trees and modules** from the matching target firmware (where the build allows an unchanged validated image).
+- Later acquire build-matched Samsung SM-F741N kernel sources, toolchain and defconfig; verify module/kernel ABI and compile independently if needed.
+- Existing `external/kernel` and `out/target/b5q/kernel` are Snapdragon 8 Gen 2/SM8550 Z Flip5, **not** suitable for the 8 Gen 3/SM8650 Flip6. No renamed cross-flashing.
+- KernelSU/susFS is a separate optional milestone once the base system is stable.
 
-## Immediate non-destructive checks in WSL
+## 5. Port DK features carefully
+
+- First port branding `DK điều chỉnh` and other cosmetic changes by checking exact APK resource IDs and methods in the Fold6 One UI 7 framework.
+- Port cover-screen behavior, DeX, USB external display and refresh-rate changes as **separate** patches. Require functional and stability tests; there is no guaranteed 120 Hz DeX or mirror unlock.
+- Validate phone-specific components including camera, radio, Wi-Fi, fingerprint, thermals, fold-state, display IC/panel behavior, and proprietary services.
+- The Eureka module in current OnigiriDeX requires additional S24 adaptive-display files; keep it optional during early compatibility testing.
+
+## 6. Validation and release gates
+
+1. Confirm model and bootloader revision before any install test; retain original firmware and backups.
+2. Validate patch integrity, APK/JAR rebuild, SELinux and VINTF.
+3. Check target partition sizes, AVB flags, boot chain, boot/recovery image headers and Odin package contents.
+4. Create an **SM-F741N-only Odin AP** once partition images pass verification. Do not reuse or flash a Fold6/Flip5 AP.
+5. Test boot, recovery, touch, fold-state, both displays, charging, connectivity, thermal behavior, DeX/external monitor and fallback firmware.
+6. Never call it a completed ROM until a successful build and model-matched validation exist.
+
+## First step on user's Debian WSL2
+
+Run these **read-only** checks to locate firmware:
 
 ```bash
 cd ~/OnigiriDeX
 git status --short
-git branch --show-current
-ls /mnt/d
+find /mnt/d -maxdepth 5 -type f \\( -iname 'AP_F741N*.tar.md5' -o -iname 'AP_F956B*.tar.md5' -o -iname '*F741N*.zip' -o -iname '*F956B*.zip' \\) -print 2>/dev/null
 ```
 
-If USB debugging is enabled and the phone is connected:
+Confirm target bootloader binary and exact F741N/F956B Android 15 software versions before changing build code.
 
-```bash
-adb devices
-adb shell getprop ro.product.vendor.model
-adb shell getprop ro.build.version.incremental
-adb shell getprop ro.boot.bootloader
-adb shell getprop ro.build.version.release
-adb shell uname -r
-```
-
-If adb is not available or the phone cannot connect, provide screenshots of Settings > About phone > Software information and Download Mode's bootloader information instead.
-
-**Stop conditions:** firmware version does not match the requested model/Android; binary downgrade; missing device-specific partitions; new binary image cannot be verified; build scripts still assert b5q.
