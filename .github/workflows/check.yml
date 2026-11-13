@@ -44,5 +44,12 @@ jobs:
           python3 scripts/check_patches.py
           git ls-files -z '*.patch' | xargs -0 python3 scripts/check_patches.py
 
+      - name: Reject unwanted no-SIM warning
+        run: |
+          if git grep -n -i -E 'If you paid for this|Nếu bạn trả tiền cho cái này' -- onigiri target; then
+            echo 'Unexpected no-SIM scam warning embedded in ROM patches' >&2
+            exit 1
+          fi
+
       - name: Config files
         run: git ls-files '*.json' | xargs -n 1 python3 -m json.tool > /dev/null
