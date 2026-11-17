@@ -570,3 +570,34 @@ that a modified Fold6 super will pass AVB / SELinux, nor prove bootability
 or Samsung DeX behavior on the device. Separately inspect boot headers,
 AVB chain descriptors, build flags, firmware match and backup/recovery
 readiness before creating a device-test AP.
+
+
+### 2026-11-18: stock AVB readiness result and next BL checkpoint
+
+The user's local `python3 scripts/analyze_b6q_avb.py` completed correctly.
+Output: `out/b6q/analysis/f741n-avb-boot-readiness.json`.
+Reported status: `BLOCKED_FOR_FLASH_UNVERIFIED_HYBRID_BOOT`.
+The seven original F741N AP boot images match their saved manifest.
+The F741N `vbmeta_system.img` AVB0 header is parseable, but its
+signature and image-descriptor applicability to the modified system
+were not established. No standalone `vbmeta.img` exists in the staged AP.
+These are expected results of a read-only compatibility preflight,
+not errors in the modified DeX framework or the branded super preview.
+
+The next read-only script searches the already imported **F741N BL TAR**
+for top-level vbmeta candidates and optionally reads stock
+`vbmeta_system.img` partition descriptors using `avbtool info_image`.
+It does not extract or modify BL, patch AVB, or create an Odin AP.
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+python3 scripts/inspect_b6q_bl_avb.py
+```
+
+Report: `out/b6q/analysis/f741n-bl-avb-discovery.json`. If `avbtool`
+is unavailable, descriptors will be explicitly marked unparsed;
+this is not a reason to bypass Android verified boot. Even when
+descriptors are readable, `avbtool info_image` does not verify that the
+stock trust chain accepts the rebuilt F956N system/product/system_ext.
+Do not flash the engineering preview.
