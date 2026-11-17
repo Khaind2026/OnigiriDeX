@@ -16,6 +16,7 @@ on:
       - 'scripts/report_b6q_dex_candidates.py'
       - 'scripts/stage_b6q_dex_assets.py'
       - 'scripts/port_b6q.sh'
+      - 'scripts/build_super_b6q.sh'
       - 'target/b6q/config.sh'
       - 'target/b6q/patches/dex/customize.sh'
       - 'target/b6q/patches/dex/module.prop'
@@ -47,8 +48,9 @@ jobs:
 
       - name: Validate b6q direct port driver (same b5q module structure)
         run: |
-          bash -n scripts/port_b6q.sh
+          bash -n scripts/port_b6q.sh scripts/build_super_b6q.sh
           bash -n target/b6q/config.sh target/b6q/patches/dex/customize.sh
           bash scripts/port_b6q.sh --help
+          bash scripts/build_super_b6q.sh --help
           test -f target/b5q/patches/dex/smali/system/framework/services.jar/0001-Add-external-display-refresh-policy.patch
           test -f target/b6q/patches/dex/customize.sh
