@@ -111,8 +111,12 @@ def logical_partitions(prefix):
     if len(prefix) < off + 128:
         raise ValueError("Missing LP metadata header")
     magic, major, minor, header_size = struct.unpack_from("<IHHI", prefix, off)
-    if magic != HEADER_MAGIC or major not in (1, 2) or not 128 <= header_size <= 4096:
-        raise ValueError("Unexpected LP primary metadata header (slot 0)")
+    if magic != HEADER_MAGIC or major != 10 or minor > 2 or not 128 <= header_size <= 4096:
+        raise ValueError(
+            f"Invalid LP slot-0 header: magic=0x{magic:08x}, "
+            f"version={major}.{minor}, size={header_size}; "
+            "Android liblp expects major 10 and minor 0..2"
+        )
     hdr = bytearray(prefix[off:off + header_size])
     if len(hdr) != header_size:
         raise ValueError("Short LP header")
