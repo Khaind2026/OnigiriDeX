@@ -89,3 +89,30 @@ concurrently on limited storage. Keep original firmware on drive D mounted.
 
 **No** b6q system builder, Samsung APK/JAR DeX port, Odin AP, or tested ROM
 is produced by this tool. Do not flash images from this staging directory.
+
+
+## Phase 5: verify completed extraction
+
+After BOTH per-model extraction commands have returned successfully to the
+shell prompt, verify all seven staged stock filesystem images without writing
+to their content:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+python3 scripts/verify_b6q_stage.py
+```
+
+Expected extracted source split:
+- F956N: `system.img`, `product.img`, `system_ext.img`
+- F741N: `vendor.img`, `odm.img`, `system_dlkm.img`, `vendor_dlkm.img`
+
+Validation compares each file's size to the matching LP metadata and
+manifest, checks model selection and simple filesystem signatures.
+Optional `--sha256` hashes all 7 files for a reproducible image inventory.
+Report: `out/reports/f741n-f956n-stage-validation.json`.
+
+The script is intentionally read-only and is *not* a flashability, DeX,
+VINTF, SELinux, boot or Android framework compatibility test.
+If the Fold6 extraction has not yet returned a prompt, do not run an
+additional extraction concurrently in the same terminal.
