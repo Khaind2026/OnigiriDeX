@@ -56,6 +56,57 @@ class SettingsAdapterTests(unittest.TestCase):
             patch = HEADER + modify("smali/com/android/CarrierText.smali", "old", "new")
             self.assertEqual(adapt_patch(patch, root), (patch, []))
 
+
+    def test_onigiri_new_file_header_with_extra_b_prefix_is_preserved(self):
+        original = (
+            "From: Onigiri\n"
+            "diff --git a/b/res/drawable/onigiri_zone_grid.xml b/res/drawable/onigiri_zone_grid.xml\n"
+            "new file mode 100644\n"
+            "index 0000000..abc1234\n"
+            "--- /dev/null\n"
+            "+++ b/res/drawable/onigiri_zone_grid.xml\n"
+            "@@ -0,0 +1 @@\n"
+            "+<vector />\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            adapted, skipped = adapt_patch(original, Path(tmp))
+        self.assertEqual(adapted, original)
+        self.assertEqual(skipped, [])
+
+    def test_original_0016_zone_layout_patch_is_accepted_unchanged(self):
+        repo = Path(__file__).resolve().parents[1]
+        original = (repo / "onigiri/mods/settings/smali/system/priv-app/"
+                    "SecSettings/SecSettings.apk/0016-Add-DeX-zone-layouts.patch").read_text()
+        with tempfile.TemporaryDirectory() as tmp:
+            adapted, skipped = adapt_patch(original, Path(tmp))
+        self.assertEqual(adapted, original)
+        self.assertEqual(skipped, [])
+        self.assertIn("onigiri_zone_columns.xml", adapted)
+        self.assertIn("DexZonesPreferenceController.smali", adapted)
+
+    def test_rename_is_still_refused_without_silent_patch_drop(self):
+        patch = (
+            "diff --git a/res/xml/old.xml b/res/xml/new.xml\n"
+            "similarity index 100%\n"
+            "rename from res/xml/old.xml\n"
+            "rename to res/xml/new.xml\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError, "Unsupported rename"):
+                adapt_patch(patch, Path(tmp))
+
+    def test_inconsistent_new_file_destination_is_rejected(self):
+        patch = (
+            "diff --git a/b/res/layout/a.xml b/res/layout/a.xml\n"
+            "new file mode 100644\n"
+            "--- /dev/null\n"
+            "+++ b/res/layout/other.xml\n"
+            "@@ -0,0 +1 @@\n+x\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError, "Unsupported rename"):
+                adapt_patch(patch, Path(tmp))
+
     @unittest.skipUnless(shutil.which("git"), "git required")
     def test_forward_and_reverse_git_checks_are_read_only(self):
         with tempfile.TemporaryDirectory() as tmp:
