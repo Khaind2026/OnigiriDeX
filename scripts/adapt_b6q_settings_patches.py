@@ -34,7 +34,7 @@ def adapt_patch(text: str, decoded_root: Path):
                 src == "b/" + path
                 and re.search(r"(?m)^new file mode 100644$", section) is not None
                 and re.search(r"(?m)^--- /dev/null$", section) is not None
-                and ("+++ b/" + path + "\\n") in section
+                and ("+++ b/" + path + "\n") in section
             )
             if not is_source_new:
                 raise ValueError(
