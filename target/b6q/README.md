@@ -439,3 +439,30 @@ bash scripts/apply_b6q_settings.sh --resume
 The generated patch must still pass git apply on actual F956N smali
 and the resulting APK must rebuild successfully before repacking a
 new b6q super preview. The earlier preview remains NOT FOR FLASH.
+
+
+### Fold6 SettingsActivity 0008 registered fragment count (2026-11-18)
+
+After patches 0001..0007 had applied successfully to SecSettings.apk, the
+upstream 0008 patch failed at SettingsActivity.smali:967. Original
+0008 changes a hardcoded bound (Fold5 0x8b) to array-length for the
+SettingsGateway.SAMSUNG_ENTRY_FRAGMENTS field. Fold6's integer bound
+or source context can differ, despite equivalent loop behavior.
+
+The direct b6q Settings replay now adapts **only that one instruction**
+from the real decoded F956N SettingsActivity.smali. It requires an exact
+sget-object -> const -> if-ge -> aget-object loop on matching registers;
+if that evidence is missing or ambiguous, the tool refuses without
+touching stock files. It then passes the disposable patch to the same
+existing git apply dry-run, source patch and SHA ledger checkpoints.
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/apply_b6q_settings.sh --resume
+```
+
+Previous DeX patches, other Settings patch checkpoints and the existing
+verified non-flashable engineering super preview remain unchanged.
+Success still requires actually rebuilding SecSettings.apk and testing
+the eventual b6q ROM on compatible hardware before flashing.
