@@ -414,3 +414,28 @@ rebase tool itself; a successful upstream `git apply` still records the
 patch in the ledger. Do not use `git apply --reject` or blindly bump
 registers. Previous `super.img` preview remains intact and must not
 be flashed.
+
+
+### SecSettings F956N v141 register collision: append helper (2026-11-18)
+
+The real F956N SettingsGateway initializer already uses v141. The old
+Fold5-style attempt to enlarge the v1..v140 array would overwrite it.
+
+The rebase script now keeps the existing Fold6 initializer array and
+register allocation untouched when v(N+1) is in use. Immediately after
+the anchored array move-result-object, it invokes a private helper
+that copies String[] and appends OnigiriSettingsFragment using the
+helper's own local registers. Only that result replaces the array in
+the same preexisting result register. No patch bypass or fuzzy apply.
+
+Continue without resetting firmware or work directory:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/apply_b6q_settings.sh --resume
+```
+
+The generated patch must still pass git apply on actual F956N smali
+and the resulting APK must rebuild successfully before repacking a
+new b6q super preview. The earlier preview remains NOT FOR FLASH.
