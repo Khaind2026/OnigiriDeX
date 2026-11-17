@@ -84,6 +84,23 @@ class SettingsAdapterTests(unittest.TestCase):
         self.assertIn("onigiri_zone_columns.xml", adapted)
         self.assertIn("DexZonesPreferenceController.smali", adapted)
 
+    def test_remaining_original_settings_patches_parse_without_mutation(self):
+        root = (Path(__file__).resolve().parents[1] /
+                "onigiri/mods/settings/smali/system/priv-app/"
+                "SecSettings/SecSettings.apk")
+        patches = sorted(root.glob("*.patch"))
+        future = [p for p in patches if p.name >= "0016-"]
+        self.assertGreaterEqual(len(future), 10)
+        with tempfile.TemporaryDirectory() as tmp:
+            decoded = Path(tmp)
+            for patch in future:
+                original = patch.read_text()
+                modified, _ = adapt_patch(original, decoded)
+                self.assertTrue(modified.startswith("From:") or
+                                modified.startswith("Subject:"),
+                                patch.name)
+                self.assertEqual(original, patch.read_text(), patch.name)
+
     def test_rename_is_still_refused_without_silent_patch_drop(self):
         patch = (
             "diff --git a/res/xml/old.xml b/res/xml/new.xml\n"
