@@ -116,3 +116,31 @@ The script is intentionally read-only and is *not* a flashability, DeX,
 VINTF, SELinux, boot or Android framework compatibility test.
 If the Fold6 extraction has not yet returned a prompt, do not run an
 additional extraction concurrently in the same terminal.
+
+
+## Phase 6: inspect Samsung DeX-related framework/vendor files
+
+After a successful `Stage verification PASS` of the seven EROFS images,
+perform a **read-only selective audit** (not another full image extraction):
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+export PATH="$PWD/out/tools/bin:$PATH"
+python3 scripts/audit_b6q_framework.py
+```
+
+The audit reads small stock properties and VINTF XML files via
+`dump.erofs --cat --path=...`, and lists selected framework, app and HAL
+directories via `dump.erofs --ls --path=...`. It searches those names for
+DeX, desktop, display, WindowManager, SystemUI, HDMI and Knox-related
+components without modifying any EROFS image. Absent optional paths are
+reported as missing instead of silently inventing compatibility evidence.
+
+Report: `out/reports/f741n-f956n-framework-audit.json`.
+Before building, review the complete report, verify Android SDK/vendor API
+and VINTF HAL versions across the target and donor, and inspect the exact
+Fold6 APK/JAR resource IDs before rebasing existing Onigiri DeX patches.
+The audit does **not** establish that DeX is enabled or ROM is bootable.
+If the installed `dump.erofs` lacks `--cat` or `--path`, record the
+version and help output instead of extracting everything blindly.
