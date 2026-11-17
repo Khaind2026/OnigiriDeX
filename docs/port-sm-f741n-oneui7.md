@@ -1,4 +1,4 @@
-# DK điều chỉnh — SM-F741N / Z Flip6 Android 15 (One UI 7), Fold6 donor port
+# DuyKhaiDeX — SM-F741N / Z Flip6 Android 15 (One UI 7), Fold6 donor port
 
 **Status:** Korean F741N/F956N firmware selection and DuyKhaiDeX display branding updated in source. **Not built or tested on device.** This is an experimental **Fold6-to-Flip6 system port**, preserving the Flip6 boot chain and hardware-specific firmware. Maintain on branch `dk-f741n-oneui7-port`; do not copy b5q binaries or merge into Flip5 release pipeline.
 
@@ -44,7 +44,7 @@ For this experimental build, **use SM-F956N (Z Fold6, q6q) Android 15 / One UI 7
 
 ## 5. Port DK features carefully
 
-- First port branding `DK điều chỉnh` and other cosmetic changes by checking exact APK resource IDs and methods in the Fold6 One UI 7 framework.
+- First port branding `DuyKhaiDeX` and other cosmetic changes by checking exact APK resource IDs and methods in the Fold6 One UI 7 framework.
 - Port cover-screen behavior, DeX, USB external display and refresh-rate changes as **separate** patches. Require functional and stability tests; there is no guaranteed 120 Hz DeX or mirror unlock.
 - Validate phone-specific components including camera, radio, Wi-Fi, fingerprint, thermals, fold-state, display IC/panel behavior, and proprietary services.
 - The Eureka module in current OnigiriDeX requires additional S24 adaptive-display files; keep it optional during early compatibility testing.
@@ -62,7 +62,7 @@ For this experimental build, **use SM-F956N (Z Fold6, q6q) Android 15 / One UI 7
 
 - Proposed public ROM name: **DuyKhaiDeX** (ROM_CODENAME changed in this branch).
 - Samsung Settings menu string and category: **Duy Khải Điều Chỉnh**.
-- No-SIM carrier-text patch: **Duy Khải DeX 0862134811**.
+- No-SIM carrier-text patch: **DuyKhaiDeX 0862134811**.
 - Keep original source copyrights, acknowledgments and upstream license/NOTICE intact.
 - The patched APK/JAR assets are still based on Fold5 and must be rebased and validated against F956N One UI 7 before they can be shipped on b6q.
 
