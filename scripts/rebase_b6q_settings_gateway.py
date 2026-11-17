@@ -82,14 +82,13 @@ def rebase(patch_text: str, decoded: Path):
     between = body[anchor.end():array_match.start()]
     if "filled-new-array" in between:
         raise ValueError("Unrelated array between MainActivity anchor and candidate")
-    # Samsung may initialize the last vN register before the known anchor.
-    # Its initialization is checked against the whole pre-array method below.
+    # The existing stock F956N array is already part of a working initializer.
+    # Its last vN entry may come from sget-object/move-object or const-string;
+    # validating only const-string falsely rejected the real v140 register.
+    # We add a NEW string register without changing any existing v1..vN entry.
     new_reg = old_last + 1
     if old_last < 2 or new_reg > 254:
         raise ValueError("Unsupported contiguous array register range")
-    before = body[:array_match.start()]
-    if not re.search(rf'\bconst-string(?:/jumbo)? v{old_last},\s*"[^"\n]+"', before):
-        raise ValueError(f"Last array register v{old_last} was not initialized by const-string")
     # Only one new contiguous register is allowed; never destroy a register
     # already used elsewhere in the original initializer.
     if re.search(rf'\bv{new_reg}\b', body):
