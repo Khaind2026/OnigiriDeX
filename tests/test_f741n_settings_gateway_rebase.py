@@ -78,6 +78,61 @@ class GatewayRebaseTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertEqual(self.target.read_text(), gateway_source(last=141))
 
+    def test_two_arrays_select_second_after_samsung_anchor(self):
+        source = gateway_source(last=141).replace(
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n',
+            '    const-string v12, "unrelated.Array"\n'
+            '    filled-new-array/range {v1 .. v12}, [Ljava/lang/String;\n'
+            '    move-result-object v0\n'
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n'
+        )
+        self.target.write_text(source)
+        adapted, info = rebase(GATEWAY_PATCH, self.decoded)
+        self.assertEqual(info["old_last_register"], 141)
+        self.assertIn("+    filled-new-array/range {v1 .. v142}", adapted)
+        self.assertNotIn("-    filled-new-array/range {v1 .. v12}", adapted)
+        patch_path = self.root / "gateway.patch"
+        patch_path.write_text(adapted.split("diff --git a/res/values/strings.xml")[0])
+        checked = subprocess.run(
+            ["git", "apply", "--check", f"--directory={self.decoded}",
+             "--unsafe-paths", str(patch_path)],
+            cwd=self.root, capture_output=True, text=True
+        )
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        self.assertEqual(self.target.read_text(), source)
+
+    def test_duplicate_array_text_before_anchor_is_preserved(self):
+        source = gateway_source(last=141).replace(
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n',
+            '    filled-new-array/range {v1 .. v141}, [Ljava/lang/String;\n'
+            '    move-result-object v0\n'
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n'
+        )
+        self.target.write_text(source)
+        adapted, info = rebase(GATEWAY_PATCH, self.decoded)
+        self.assertEqual(info["new_last_register"], 142)
+        self.assertEqual(adapted.count("-    filled-new-array/range {v1 .. v141}"), 1)
+        self.assertEqual(adapted.count("+    filled-new-array/range {v1 .. v142}"), 1)
+
+    def test_refuses_ambiguous_duplicate_anchor(self):
+        source = gateway_source(last=141).replace(
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n',
+            '    const-string v130, "com.samsung.android.fast.ui.MainActivity"\n'
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n'
+        )
+        self.target.write_text(source)
+        with self.assertRaisesRegex(ValueError, "one precise Samsung MainActivity"):
+            rebase(GATEWAY_PATCH, self.decoded)
+
+    def test_refuses_array_excluding_anchor_register(self):
+        source = gateway_source(last=141).replace(
+            "filled-new-array/range {v1 .. v141}",
+            "filled-new-array/range {v1 .. v80}"
+        )
+        self.target.write_text(source)
+        with self.assertRaisesRegex(ValueError, "outside candidate"):
+            rebase(GATEWAY_PATCH, self.decoded)
+
     def test_bumps_register_allocation_when_required(self):
         self.target.write_text(gateway_source(last=141, registers=142))
         updated, info = rebase(GATEWAY_PATCH, self.decoded)
