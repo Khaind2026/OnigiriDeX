@@ -144,3 +144,31 @@ Fold6 APK/JAR resource IDs before rebasing existing Onigiri DeX patches.
 The audit does **not** establish that DeX is enabled or ROM is bootable.
 If the installed `dump.erofs` lacks `--cat` or `--path`, record the
 version and help output instead of extracting everything blindly.
+
+
+## Phase 7: inspect exact DeX candidates from the framework audit
+
+The user's 2026-11-18 output confirmed the 7 staged EROFS images pass
+validation. Fold6 reports SDK 35 and Flip6 vendor reports device `b6q`
+with `ro.vendor.build.version.sdk=34`; the latter alone does not imply
+framework/vendor incompatibility.
+
+Read the existing audit JSON rather than extracting images again:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+python3 scripts/report_b6q_dex_candidates.py
+```
+
+This prints all DeX/desktop/display candidate listing matches and checks
+whether three original Fold5 DeX app names appear in the Fold6 listing
+(`KnoxDesktopLauncher`, `DesktopModeUiService`, `DesktopSystemUI`),
+along with corresponding permission XML names. Missing matches only mean
+"not seen in this limited directory listing", **not** that the component
+is absent or incompatible. It also summarizes selected VINTF/HAL names.
+
+Output is `out/reports/f741n-f956n-dex-candidates.json`.
+Before patching any APK/JAR, inspect and compare actual executable resources
+and vendor interfaces; do not apply Fold5 binary patch offsets or SELinux
+policy substitutions directly to Fold6 framework/Flip6 vendor.
