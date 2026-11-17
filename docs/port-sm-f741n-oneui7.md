@@ -103,3 +103,27 @@ python3 -m unittest discover -s tests -p 'test_f741n_preflight.py' -v
 Before any experimental packaging, inspect actual phone model, PDA, CSC and bootloader revision (`adb shell getprop ro.bootloader` and `adb shell getprop ro.product.model`). Then independently verify Odin trailing MD5, extract firmware partitions in **separate** work directories, dump target super partition metadata, assess VINTF/SELinux compatibility and implement a b6q-specific build graph. The existing b5q `make_rom` and `build_odin` scripts are not safe to use for F741N.
 
 Do not flash AP/BL/CP/CSC from Fold6 onto Flip6. No downloadable Flip6 ROM has been generated or device-tested by this source change.
+
+
+## Phase 2: stock Odin AP/BL header inventory (read-only)
+
+After BOTH Korean firmware imports report
+`F741N/F956N Odin imports verified. No ROM built or flashed.`, use:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+python3 scripts/inspect_f741n_f956n_archives.py
+```
+
+The script lists archive headers, checks whether AP contains `super.img.lz4` or
+individual partition images, and records the names of boot-related images.
+It generates `out/reports/f741n-f956n-odin-layout.json` and prints a short
+summary without extracting images or modifying any firmware file. Bring back
+the printed summary before writing an extractor for the actual partition
+layout. It is not an Android ROM build.
+
+The imported archives can be large but TAR header enumeration skips payload
+bytes. Read-only archive scanning does NOT establish DeX support, match
+framework APIs, prove boot compatibility, or validate F741N bootloader binary
+on the physical phone. Keep Flip6 low-level binaries separate from Fold6.
