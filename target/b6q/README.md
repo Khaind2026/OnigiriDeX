@@ -247,3 +247,39 @@ No ROM has been boot-tested on the user's Flip6.
 The preview packs **all seven** partitions from the *already prepared and
 DeX-patched work directory*, without re-downloading or re-extracting firmware.
 It will refuse to overwrite existing preview output.
+
+
+## Phase 9: apply original Settings branding patches without losing the preview
+
+The user's 2026-11-18 Debian output confirms
+`ENGINEERING SUPER PREVIEW BUILT AND RE-UNPACK VERIFIED` after repacking
+all seven b6q partitions. Later `Output already exists; refusing overwrite`
+messages are expected protections, not build failures. The repeated
+`Invalid sparse file format at header magic` messages were non-fatal during
+this run; the final `lpunpack` + `cmp` verified the generated preview.
+
+To port the **original Onigiri Settings** UI and carrier text, reusing the
+real patch series on the already DeX-patched F956N APK/JAR files:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/apply_b6q_settings.sh
+```
+
+This script replays `onigiri/mods/settings/smali` via the existing module
+and apktool build pipeline. It does not copy the original Fold5
+`customize.sh` that changes vendor SELinux policy. The upstream patch
+source already contains "Duy Khải Điều Chỉnh" and
+"Duy Khải DeX 0862134811" display strings. A Fold6 patch mismatch
+stops with a detailed log in `out/b6q/port-logs` and retains the
+work tree for a targeted fix. No need to re-import or re-extract firmware.
+
+The existing DeX-only `DuyKhaiDeX_F741N_SUPER_PREVIEW_NOT_FOR_FLASH.img`
+will remain untouched. **After** a complete Settings patch replay,
+`bash scripts/build_super_b6q.sh --build` writes a NEW separate file
+named `DuyKhaiDeX_F741N_BRANDED_SUPER_PREVIEW_NOT_FOR_FLASH.img`.
+
+Both are engineering previews only; **do not flash**. Neither contains
+a completed F741N AVB/boot-chain compatibility solution or a
+device-tested Odin AP. Preserve upstream license and credits.
