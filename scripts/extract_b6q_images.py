@@ -211,8 +211,12 @@ def preflight(root, metadata_file, plan_file, model, destination):
     if destination.exists() or destination.is_symlink():
         raise FileExistsError(f"Refusing to overwrite existing output: {destination}")
     parent = destination.parent
-    if not parent.is_dir():
+    while not parent.exists():
+        if parent == parent.parent:
+            raise ValueError("No accessible filesystem for staging")
         parent = parent.parent
+    if not parent.is_dir():
+        raise ValueError(f"Not a directory: {parent}")
     disk = shutil.disk_usage(parent)
     selected_bytes = sum(size for _, _, size in parts)
     # Reserve one raw super image, all selected partition outputs and 4 GiB.
