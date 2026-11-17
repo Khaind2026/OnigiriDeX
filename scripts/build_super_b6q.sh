@@ -13,7 +13,13 @@ WORK_DIR="$OUT_DIR/target/b6q/SM-F741N/work_dir"
 export WORK_DIR
 REPORT="$OUT_DIR/reports/f741n-f956n-super-metadata.json"
 OUTPUT_DIR="$OUT_DIR/b6q/build"
-OUTPUT="$OUTPUT_DIR/DuyKhaiDeX_F741N_SUPER_PREVIEW_NOT_FOR_FLASH.img"
+# A second, separately named preview may be built after Settings branding.
+# Never overwrite the original DeX-only super preview already verified.
+if [[ -f "$WORK_DIR/.b6q-settings-patched" ]]; then
+    OUTPUT="$OUTPUT_DIR/DuyKhaiDeX_F741N_BRANDED_SUPER_PREVIEW_NOT_FOR_FLASH.img"
+else
+    OUTPUT="$OUTPUT_DIR/DuyKhaiDeX_F741N_SUPER_PREVIEW_NOT_FOR_FLASH.img"
+fi
 PARTITIONS=(system product system_ext vendor odm vendor_dlkm system_dlkm)
 
 if [[ "$#" == 1 && "$1" == --help ]]; then
