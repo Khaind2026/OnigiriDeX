@@ -213,3 +213,37 @@ Output is `out/reports/f741n-f956n-dex-candidates.json`.
 Before patching any APK/JAR, inspect and compare actual executable resources
 and vendor interfaces; do not apply Fold5 binary patch offsets or SELinux
 policy substitutions directly to Fold6 framework/Flip6 vendor.
+
+
+## Phase 8: build F741N super engineering preview using original b5q packer
+
+The user's Debian terminal confirmed all original b5q DeX smali patches replayed
+onto F956N, then `SmartCapture.apk`, `SystemUI.apk`,
+`DesktopSystemUI.apk`, and `services.jar` were successfully rebuilt.
+`out/target/b6q/SM-F741N/work_dir/.b6q-dex-patched` is now present.
+
+The next step **reuses exactly the same build pipeline as
+`scripts/build_odin.sh`**: `scripts/build_fs_image.sh erofs`,
+`lpmake`, `simg2img`, `lpunpack`, and byte-for-byte checks.
+It uses real SM-F741N super geometry rather than b5q's hardcoded sizes.
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/build_super_b6q.sh
+bash scripts/build_super_b6q.sh --build
+```
+
+Output:
+`out/b6q/build/DuyKhaiDeX_F741N_SUPER_PREVIEW_NOT_FOR_FLASH.img`
+plus .sha256 and .txt notes. It is a **non-flashable engineering preview**:
+the F741N boot images, AVB descriptors, recovery and required vendor/framework
+compatibility checks are not done. The previous b5q binary SurfaceFlinger
+offsets cannot be reused on F956N. The common Onigiri Settings UI and no-SIM
+branding patches still need to be replayed separately on the b6q source tree
+before a release candidate, even though their source text has been renamed.
+No ROM has been boot-tested on the user's Flip6.
+
+The preview packs **all seven** partitions from the *already prepared and
+DeX-patched work directory*, without re-downloading or re-extracting firmware.
+It will refuse to overwrite existing preview output.
