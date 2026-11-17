@@ -17,7 +17,7 @@ import re
 GATEWAY = "smali_classes2/com/android/settings/core/gateway/SettingsGateway.smali"
 FRAGMENT = "moe.foss.onigiri.OnigiriSettingsFragment"
 TARGET_CONST = f'    const-string v{{new}}, "{FRAGMENT}"'
-ARRAY = re.compile(r'filled-new-array/range \{v1 \.\. v(\d+)\}, \[Ljava/lang/String;')
+ARRAY = re.compile(r'^[ \t]*filled-new-array/range \{v1 \.\. v(\d+)\}, \[Ljava/lang/String;', re.MULTILINE)
 END = "\n.end method"
 STATIC_ANCHOR = "com.samsung.android.fast.ui.MainActivity"
 
@@ -101,7 +101,7 @@ def rebase(patch_text: str, decoded: Path):
     # Insert by the *selected match offset*: other arrays may have identical
     # text and must remain byte-for-byte unchanged.
     old_array = array_match.group(0)
-    insertion = f'{TARGET_CONST.format(new=new_reg)}\n\n    ' + \
+    insertion = f'{TARGET_CONST.format(new=new_reg)}\n\n' + \
                 old_array.replace(f"v{old_last}}}", f"v{new_reg}}}")
     replacement_body = (body[:array_match.start()] + insertion +
                         body[array_match.end():])
