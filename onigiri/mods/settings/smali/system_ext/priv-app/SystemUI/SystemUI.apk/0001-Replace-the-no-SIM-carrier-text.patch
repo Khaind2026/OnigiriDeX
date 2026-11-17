@@ -1,5 +1,5 @@
 From: Onigiri
-Subject: [PATCH] Replace the no-SIM carrier text with our own, without "Emergency calls only"
+Subject: [PATCH] Show Duy Khải DeX carrier branding on no-SIM lock screen
 
 diff --git a/res/values/strings.xml b/res/values/strings.xml
 index 2faffa3..4043009 100644
@@ -10,7 +10,7 @@ index 2faffa3..4043009 100644
  If you don't know your PUK, visit a Customer Service location."</string>
      <string name="kg_lockscreen_emergency_call_button_text">Emergency call</string>
 -    <string name="kg_missing_sim_message_short">No SIM card</string>
-+    <string name="kg_missing_sim_message_short">If you paid for this, you’ve been scammed</string>
++    <string name="kg_missing_sim_message_short">Duy Khải DeX 0862134811</string>
      <string name="kg_multi_password_active_instructions">Use biometrics or enter password to open</string>
      <string name="kg_multi_password_dex_instructions">Enter password or use your biometrics on your phone</string>
      <string name="kg_multi_password_none_instructions">Use biometrics or enter password</string>
@@ -23,7 +23,7 @@ index 8f3bdd1..a8c0e34 100644
  If you don't know your PUK, visit a Customer Service location."</string>
      <string name="kg_lockscreen_emergency_call_button_text">Emergency call</string>
 -    <string name="kg_missing_sim_message_short">No SIM</string>
-+    <string name="kg_missing_sim_message_short">If you paid for this, you’ve been scammed</string>
++    <string name="kg_missing_sim_message_short">Duy Khải DeX 0862134811</string>
      <string name="kg_multi_password_active_instructions">Use biometrics or enter password to open</string>
      <string name="kg_multi_password_dex_instructions">Enter password or use your biometrics on your phone</string>
      <string name="kg_multi_password_none_instructions">Use biometrics or enter password</string>
@@ -36,7 +36,7 @@ index 229e241..84c1847 100644
  If you don't know your PUK, visit a Customer Service location."</string>
      <string name="kg_lockscreen_emergency_call_button_text">Emergency call</string>
 -    <string name="kg_missing_sim_message_short">No SIM</string>
-+    <string name="kg_missing_sim_message_short">If you paid for this, you’ve been scammed</string>
++    <string name="kg_missing_sim_message_short">Duy Khải DeX 0862134811</string>
      <string name="kg_multi_password_active_instructions">Use biometrics or enter password to open</string>
      <string name="kg_multi_password_dex_instructions">Enter password or use your biometrics on your phone</string>
      <string name="kg_multi_password_none_instructions">Use biometrics or enter password</string>
@@ -49,7 +49,7 @@ index 076a3b3..6388d27 100644
  If you don't know your PUK, visit a Customer Service location."</string>
      <string name="kg_lockscreen_emergency_call_button_text">Emergency call</string>
 -    <string name="kg_missing_sim_message_short">No SIM</string>
-+    <string name="kg_missing_sim_message_short">If you paid for this, you’ve been scammed</string>
++    <string name="kg_missing_sim_message_short">Duy Khải DeX 0862134811</string>
      <string name="kg_multi_password_active_instructions">Use biometrics or enter password to open</string>
      <string name="kg_multi_password_dex_instructions">Enter password or use your biometrics on your phone</string>
      <string name="kg_multi_password_none_instructions">Use biometrics or enter password</string>
@@ -62,7 +62,7 @@ index 3277ccc..4b68701 100644
  If you don't know your PUK, visit a Customer Service location."</string>
      <string name="kg_lockscreen_emergency_call_button_text">Emergency call</string>
 -    <string name="kg_missing_sim_message_short">No SIM</string>
-+    <string name="kg_missing_sim_message_short">If you paid for this, you’ve been scammed</string>
++    <string name="kg_missing_sim_message_short">Duy Khải DeX 0862134811</string>
      <string name="kg_multi_password_active_instructions">Use biometrics or enter password to open</string>
      <string name="kg_multi_password_dex_instructions">Enter password or use your biometrics on your phone</string>
      <string name="kg_multi_password_none_instructions">Use biometrics or enter password</string>
@@ -75,7 +75,7 @@ index ad0ae73..dc21184 100644
  Nếu bạn không biết mã PUK của mình, hãy đến trung tâm Dịch vụ khách hàng."</string>
      <string name="kg_lockscreen_emergency_call_button_text">Cuộc gọi khẩn cấp</string>
 -    <string name="kg_missing_sim_message_short">Không có SIM</string>
-+    <string name="kg_missing_sim_message_short">Nếu bạn trả tiền cho cái này, bạn đã bị lừa</string>
++    <string name="kg_missing_sim_message_short">Duy Khải DeX 0862134811</string>
      <string name="kg_multi_password_active_instructions">Dùng dữ liệu sinh trắc học hoặc nhập mật mã để mở</string>
      <string name="kg_multi_password_dex_instructions">Nhập mật mã hoặc sử dụng dữ liệu sinh trắc học trên điện thoại của bạn</string>
      <string name="kg_multi_password_none_instructions">Dùng dữ liệu sinh trắc học hoặc nhập mật mã</string>
