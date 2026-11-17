@@ -343,3 +343,39 @@ bash scripts/apply_b6q_settings.sh --resume
 
 This does **not** overwrite the existing verified engineering super
 preview or constitute a safe-to-flash ROM.
+
+
+### Framework.jar prerequisite ordering discovered after Settings replay (2026-11-18)
+
+The user's latest real firmware log confirms:
+- Fold6 `SystemUI` no-SIM branding patch **applied**.
+- `DAAgent` patch **applied**.
+- `framework.jar/0001-Introduce-SamsungPropsHooks.patch` failed on
+  `ApplicationPackageManager.smali` and `Instrumentation.smali`.
+- The source `SamsungPropsHooks.patch` explicitly anchors its
+  Instrumentation edits after `PlayIntegrityHooks->setProps`.
+  `onigiri/mods/pif/smali/system/framework/framework.jar/0001-Introduce-PlayIntegrityHooks.patch`
+  creates that call. The original `scripts/make_rom.sh` runs
+  `onigiri/mods` alphabetically, so **pif precedes settings**.
+- The previous b6q Settings-only driver violated that upstream prerequisite
+  order, so a failed Settings hunk did not by itself establish a Fold6 ABI
+  incompatibility.
+
+`scripts/apply_b6q_settings.sh --resume` now replays the upstream PIF
+framework and services smali series first, with the same forward/reverse
+dry-run checks and SHA checkpoint ledger, and then resumes the original
+Settings patches. It does not claim Play Integrity support or device
+security attestation compatibility; such functionality is outside of
+the DeX boot-validation milestone.
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/apply_b6q_settings.sh --resume
+```
+
+If an upstream PIF patch fails to match the actual F956N smali, the log
+identifies the exact unadapted hunk and leaves already applied patches
+untouched. Never use `--reject` or unconditional patch fuzz to force
+critical framework changes. The existing verified engineering super
+preview is unchanged; do not flash it.
