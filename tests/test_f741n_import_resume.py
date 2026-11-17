@@ -15,7 +15,7 @@ from preflight_f741n import EXPECTED, ODIN_ROLES  # noqa: E402
 
 def fake_names(model):
     return [
-        f"{role}_{EXPECTED[model][role]}_{model.replace('SM-', '')}_{role}.tar.md5"
+        f"{'CSC_OKR' if role == 'CSC' else role}_{EXPECTED[model][role]}_{model.replace('SM-', '')}_{role}.tar.md5"
         for role in ODIN_ROLES
     ]
 
