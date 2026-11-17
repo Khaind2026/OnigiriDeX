@@ -533,3 +533,40 @@ FLASH: AVB/vbmeta compatibility, boot/kernel configuration, Samsung
 boot-chain handling and actual DeX behavior on Flip6 are unverified.
 Do not equate passing patch/app rebuilds or image pack/unpack with a
 bootable ROM.
+
+
+### 2026-11-18 milestone: branded super preview successfully rebuilt
+
+Debian output confirms the branded super engineering preview successfully
+repacked all seven EROFS partitions and then unpacked and compared them
+byte for byte. The original DeX-only preview was not overwritten.
+
+Output: `out/b6q/build/DuyKhaiDeX_F741N_BRANDED_SUPER_PREVIEW_NOT_FOR_FLASH.img`
+
+The next milestone is *boot-chain analysis*, not another framework
+extraction or Settings replay. Flip6 F741N must keep its own original
+boot, init_boot, vendor_boot, recovery, DTBO and AVB-related images;
+Fold6 boot/kernel assets must never be substituted for them.
+
+Read only TAR inventory first, then stage specific F741N images:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+python3 scripts/stage_b6q_boot_chain.py
+python3 scripts/stage_b6q_boot_chain.py --extract
+```
+
+Default runs TAR-header-only checks from the **already imported**
+`out/odin/SM-F741N_SKC/AP_F741NKSS2BYGB*.tar.md5` source.
+`--extract` decompresses only F741N boot-chain members into a NEW
+`out/b6q/analysis/f741n-stock-boot-chain` directory with SHA-256 hashes.
+The tool does not copy Fold6 boot assets, alter either verified preview
+or create an Odin package. It optionally prints `avbtool info_image`
+descriptor summaries if avbtool is available.
+
+**STOP before flashing.** Even original F741N boot images do not establish
+that a modified Fold6 super will pass AVB / SELinux, nor prove bootability
+or Samsung DeX behavior on the device. Separately inspect boot headers,
+AVB chain descriptors, build flags, firmware match and backup/recovery
+readiness before creating a device-test AP.
