@@ -127,3 +127,31 @@ The imported archives can be large but TAR header enumeration skips payload
 bytes. Read-only archive scanning does NOT establish DeX support, match
 framework APIs, prove boot compatibility, or validate F741N bootloader binary
 on the physical phone. Keep Flip6 low-level binaries separate from Fold6.
+
+
+## Phase 3: bounded super metadata inspection (no 12 GB extraction)
+
+Both Korean Odin AP archives have `super.img.lz4` (as confirmed by the
+user's `inspect_f741n_f956n_archives.py` terminal output; 12 AP TAR
+members and 33 BL TAR members each). Use the new read-only metadata parser:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+command -v lz4 || sudo apt install lz4
+python3 scripts/inspect_super_f741n_f956n.py
+```
+
+The script reads at most the first 4 MiB of *decompressed logical image data*
+from each verified AP, decoding Android sparse chunks as needed. It validates
+LP geometry, header and tables SHA-256 and lists groups, partitions and their
+size in bytes. It does not write a full `super.img`, unpack any partition or
+modify the firmware. Results go to
+`out/reports/f741n-f956n-super-metadata.json`.
+
+**Important:** if a specific Samsung firmware uses an unsupported LP layout,
+the script fails with an error instead of assuming a standard b5q partition
+geometry. In that case capture the error; do not force the Flip5 geometry.
+After a successful report, compare the target partition/group limits with
+the donor, inspect their Android/VINTF/SELinux dependencies and then implement
+a b6q-specific build before producing any Odin AP.
