@@ -40,21 +40,12 @@ if [[ -e "$WORK_DIR/.b6q-settings-attempted" ]]; then
         echo "Previous Settings attempt exists. Use --resume to continue safely." >&2
         exit 1
     fi
-    if [[ ! -e "$LEDGER" ]]; then
-        # The screenshot shows the very FIRST original patch failed atomically
-        # because F956N has no values-en-rCA/strings.xml. No Settings hunk was
-        # applied by git (it was a single failed git apply transaction).
-        LAST_LOG="$(find "$OUT_DIR/b6q/port-logs" -maxdepth 1 -name 'Settings-replay-*.log' -type f -printf '%T@ %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
-        [[ -f "$LAST_LOG" ]] || { echo "Cannot locate previous Settings log" >&2; exit 1; }
-        if ! grep -Fq 'res/values-en-rCA/strings.xml' "$LAST_LOG" ||
-           ! grep -Fq 'No such file or directory' "$LAST_LOG" ||
-           [[ "$(grep -c '^- Applying ' "$LAST_LOG")" != 1 ]]; then
-            echo "Prior patch state cannot be verified as atomic first-patch failure." >&2
-            echo "Preserving work tree; examine $LAST_LOG" >&2
-            exit 1
-        fi
-        echo "- Verified previous attempt failed on its first patch; safe to resume."
-    fi
+    # Do not infer the on-disk state from a fragile count of log lines.
+    # The previous first git apply failed atomically, but regardless of
+    # log formatting every pending patch gets a forward AND reverse --check
+    # on its actual decoded F956N APK/JAR before any write.
+    echo "- Resume requested; verifying each patch against current Fold6 sources."
+
 fi
 for tool in apktool git zipalign; do
     command -v "$tool" >/dev/null || { echo "Missing required tool $tool" >&2; exit 1; }
@@ -115,12 +106,26 @@ apply_one_target()
         cp "$original" "$staged_patch"
         python3 "$SRC_DIR/scripts/adapt_b6q_settings_patches.py" \
             --patch "$staged_patch" --decoded "$decoded" || return 1
-        if ! APPLY_PATCH "$partition" "$relative" "$staged_patch" 2>&1 | tee -a "$LOG"; then
-            echo "Patch failed: $name" >&2
-            echo "Previously successful patches are recorded and will be skipped on --resume." >&2
+        # Confirm actual applicability instead of relying on a previous
+        # attempt's log formatting. git apply --check does not modify files.
+        if LC_ALL=C git apply --check --directory="$decoded" --unsafe-paths \
+            "$staged_patch" > "$STAGE/forward-check.log" 2>&1; then
+            echo "- Forward check OK: $name" | tee -a "$LOG"
+            if ! APPLY_PATCH "$partition" "$relative" "$staged_patch" 2>&1 | tee -a "$LOG"; then
+                echo "Patch application failed: $name" >&2
+                return 1
+            fi
+            printf '%s\n' "$key" >> "$LEDGER"
+        elif LC_ALL=C git apply --reverse --check --directory="$decoded" --unsafe-paths \
+            "$staged_patch" > "$STAGE/reverse-check.log" 2>&1; then
+            echo "- Patch already applied to decoded Fold6 target: $name" | tee -a "$LOG"
+            printf '%s\n' "$key" >> "$LEDGER"
+        else
+            echo "Fold6 patch conflict, not a missing-language-only issue: $name" | tee -a "$LOG" >&2
+            cat "$STAGE/forward-check.log" | tee -a "$LOG" >&2
+            echo "Work tree preserved. Patch is neither cleanly applicable nor fully present." >&2
             return 1
         fi
-        printf '%s\n' "$key" >> "$LEDGER"
     done
 }
 
