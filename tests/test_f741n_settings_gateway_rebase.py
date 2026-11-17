@@ -177,10 +177,50 @@ class GatewayRebaseTests(unittest.TestCase):
         self.assertEqual(info["registers_declared_after"], 143)
         self.assertIn("+    .registers 143", updated)
 
-    def test_refuses_to_reuse_register_that_is_active(self):
-        self.target.write_text(gateway_source(last=141, preused=True))
-        with self.assertRaisesRegex(ValueError, "already used"):
+    def test_preserves_occupied_v142_by_using_post_array_helper(self):
+        source = gateway_source(last=141, preused=True)
+        self.target.write_text(source)
+        updated, info = rebase(GATEWAY_PATCH, self.decoded)
+        self.assertEqual(info["strategy"], "post_array_append")
+        self.assertEqual(info["registers_declared_after"], 142)
+        self.assertIn("    move-object v142, v0", updated)
+        self.assertIn("    invoke-static {v0}, Lcom/android/settings/core/gateway/SettingsGateway;->duykhai$appendOnigiriFragment([Ljava/lang/String;)[Ljava/lang/String;", updated)
+        self.assertIn("+    .locals 3", updated)
+        self.assertIn("+    check-cast v2, [Ljava/lang/String;", updated)
+        self.assertNotIn("+    filled-new-array/range {v1 .. v142}", updated)
+        self.assertIn("+    const-string v1, \"moe.foss.onigiri.OnigiriSettingsFragment\"", updated)
+        gateway_patch = updated.split("diff --git a/res/values/strings.xml")[0]
+        patchfile = self.root / "gateway-occupied.patch"
+        patchfile.write_text(gateway_patch)
+        result = subprocess.run(
+            ["git", "apply", "--check",
+             f"--directory={self.decoded}", "--unsafe-paths", str(patchfile)],
+            cwd=self.root, capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.target.read_text(), source)
+
+    def test_occupied_following_register_requires_array_move_result(self):
+        self.target.write_text(
+            gateway_source(last=140, preused=True)
+            .replace("    move-result-object v0\n", "    nop\n")
+        )
+        with self.assertRaisesRegex(ValueError, "Missing immediate array move-result"):
             rebase(GATEWAY_PATCH, self.decoded)
+
+    def test_fallback_is_scoped_to_anchored_array_not_unrelated_array(self):
+        source = gateway_source(last=141, preused=True).replace(
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n',
+            '    const-string v12, "unrelated.Array"\n'
+            '    filled-new-array/range {v1 .. v12}, [Ljava/lang/String;\n'
+            '    move-result-object v0\n'
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n'
+        )
+        self.target.write_text(source)
+        patch, info = rebase(GATEWAY_PATCH, self.decoded)
+        self.assertEqual(info["strategy"], "post_array_append")
+        self.assertEqual(patch.count("+    invoke-static {v0}, Lcom/android/settings/core/gateway/SettingsGateway;->duykhai$appendOnigiriFragment"), 1)
+        self.assertNotIn("-    filled-new-array/range {v1 .. v12}", patch)
 
     def test_refuses_missing_target_anchor(self):
         self.target.write_text(gateway_source().replace(
