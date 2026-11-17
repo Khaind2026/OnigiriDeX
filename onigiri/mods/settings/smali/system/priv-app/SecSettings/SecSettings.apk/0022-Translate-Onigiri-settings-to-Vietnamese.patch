@@ -10,11 +10,11 @@ diff --git a/res/values-vi/strings.xml b/res/values-vi/strings.xml
      <string name="onigiri_spoof_settings_title">Ngụy trang</string>
      <string name="onigiri_ss_detection_title">Không cho ứng dụng biết khi chụp màn hình</string>
      <string name="onigiri_ui_settings_title">Giao diện</string>
-+    <string name="keywords_onigiri_settings">Cài đặt Onigiri</string>
++    <string name="keywords_onigiri_settings">Duy Khải Điều Chỉnh</string>
 +    <string name="onigiri_settings_summary">Tính năng bổ sung</string>
 +    <string name="onigiri_update_title">Cập nhật phần mềm</string>
 +    <string name="onigiri_patch_settings_title">Bản vá</string>
-+    <string name="onigiri_settings_category_title">Cài đặt Onigiri</string>
++    <string name="onigiri_settings_category_title">Duy Khải Điều Chỉnh</string>
 +    <string name="onigiri_sleep_when_folded_title">Tắt màn hình khi gập máy</string>
 +    <string name="onigiri_autoboot_title">Tự bật máy khi cắm sạc</string>
 +    <string name="onigiri_car_standby_title">Chế độ chờ khi không cắm sạc</string>
