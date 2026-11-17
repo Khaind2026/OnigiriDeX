@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 import tempfile
 import unittest
+import subprocess
+import shutil
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from adapt_b6q_settings_patches import adapt_patch, adapt_tree
@@ -53,6 +55,31 @@ class SettingsAdapterTests(unittest.TestCase):
             root = Path(tmp)
             patch = HEADER + modify("smali/com/android/CarrierText.smali", "old", "new")
             self.assertEqual(adapt_patch(patch, root), (patch, []))
+
+    @unittest.skipUnless(shutil.which("git"), "git required")
+    def test_forward_and_reverse_git_checks_are_read_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            decoded = root / "decoded"
+            (decoded / "res/values").mkdir(parents=True)
+            original = decoded / "res/values/strings.xml"
+            original.write_text("old\\n")
+            patch = root / "patch.diff"
+            patch.write_text(HEADER + modify("res/values/strings.xml", "old", "new"))
+            command = ["git", "apply", "--directory=" + str(decoded),
+                       "--unsafe-paths", str(patch)]
+            forward = subprocess.run(command[:2] + ["--check"] + command[2:],
+                                     cwd=root, capture_output=True)
+            self.assertEqual(forward.returncode, 0, forward.stderr.decode())
+            self.assertEqual(original.read_text(), "old\\n")
+            applied = subprocess.run(command, cwd=root, capture_output=True)
+            self.assertEqual(applied.returncode, 0, applied.stderr.decode())
+            self.assertEqual(original.read_text(), "new\\n")
+            reversed_check = subprocess.run(
+                command[:2] + ["--reverse", "--check"] + command[2:],
+                cwd=root, capture_output=True)
+            self.assertEqual(reversed_check.returncode, 0, reversed_check.stderr.decode())
+            self.assertEqual(original.read_text(), "new\\n")
 
     def test_new_translation_file_patch_is_never_filtered(self):
         with tempfile.TemporaryDirectory() as tmp:
