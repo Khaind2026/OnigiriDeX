@@ -61,9 +61,33 @@ def rebase(patch_text: str, decoded: Path):
     # Fold6 may construct multiple unrelated String[] arrays in <clinit>.
     # The original b5q patch targets the list containing the known Samsung
     # MainActivity class, not an arbitrary first v1..vN array.
+    # Fold6 can build multiple arrays. Only the array following the exact
+    # MainActivity string is a possible target for the original b5q patch.
     matches = list(ARRAY.finditer(body))
     anchors = list(re.finditer(
-        rf'^[ \t]*const-string(?:/jumbo)?[ \t]+v(\d+),[ \t]*"{re.escape(STATIC_ANCHOR)}"[ \t]*
+        rf'^[ \t]*const-string(?:/jumbo)?[ \t]+v(\d+),[ \t]*"{re.escape(STATIC_ANCHOR)}"[ \t]*$',
+        body, re.MULTILINE
+    ))
+    if len(anchors) != 1:
+        raise ValueError(f"Expected one precise Samsung MainActivity const-string, found {len(anchors)}")
+    anchor = anchors[0]
+    anchor_reg = int(anchor.group(1))
+    following = [m for m in matches if m.start() > anchor.end()]
+    if not following:
+        raise ValueError("No String[] array after Samsung MainActivity anchor")
+    array_match = following[0]
+    old_last = int(array_match.group(1))
+    if not 1 <= anchor_reg <= old_last:
+        raise ValueError(f"Anchor v{anchor_reg} outside candidate v1..v{old_last} array")
+    between = body[anchor.end():array_match.start()]
+    if "filled-new-array" in between:
+        raise ValueError("Unrelated array between MainActivity anchor and candidate")
+    if old_last != anchor_reg and not re.search(
+        rf'\bconst-string(?:/jumbo)?[ \t]+v{old_last},[ \t]*"[^"\n]+"',
+        between
+    ):
+        raise ValueError(f"Final v{old_last} not initialized after MainActivity anchor")
+    new_reg = old_last + 1
     if old_last < 2 or new_reg > 254:
         raise ValueError("Unsupported contiguous array register range")
     before = body[:array_match.start()]
