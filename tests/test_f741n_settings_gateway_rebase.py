@@ -114,6 +114,31 @@ class GatewayRebaseTests(unittest.TestCase):
         self.assertEqual(adapted.count("-    filled-new-array/range {v1 .. v141}"), 1)
         self.assertEqual(adapted.count("+    filled-new-array/range {v1 .. v142}"), 1)
 
+    def test_fold6_v140_can_be_initialized_by_sget_object(self):
+        # Real F956N lists v1..v140 but register v140 is not assigned
+        # by const-string. The original stock array is left untouched,
+        # and the port only introduces new, unused v141.
+        source = gateway_source(last=140).replace(
+            '    const-string v140, "com.samsung.android.settings.KnoxFeature"\n',
+            '    sget-object v140, Lcom/samsung/android/settings/Gateway;->LAST:Ljava/lang/String;\n'
+        )
+        self.target.write_text(source)
+        updated, info = rebase(GATEWAY_PATCH, self.decoded)
+        self.assertEqual(info["old_last_register"], 140)
+        self.assertEqual(info["new_last_register"], 141)
+        self.assertIn('+    const-string v141, "moe.foss.onigiri.OnigiriSettingsFragment"', updated)
+        self.assertIn("+    filled-new-array/range {v1 .. v141}", updated)
+        self.assertNotIn("-    sget-object v140", updated)
+        patch_path = self.root / "gateway-sget.patch"
+        patch_path.write_text(updated.split("diff --git a/res/values/strings.xml")[0])
+        checked = subprocess.run(
+            ["git", "apply", "--check", f"--directory={self.decoded}",
+             "--unsafe-paths", str(patch_path)],
+            cwd=self.root, capture_output=True, text=True,
+        )
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        self.assertEqual(self.target.read_text(), source)
+
     def test_last_register_initialized_before_samsung_anchor(self):
         original = gateway_source(last=141)
         original = original.replace(
