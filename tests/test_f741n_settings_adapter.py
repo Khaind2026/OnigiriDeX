@@ -63,7 +63,7 @@ class SettingsAdapterTests(unittest.TestCase):
             decoded = root / "decoded"
             (decoded / "res/values").mkdir(parents=True)
             original = decoded / "res/values/strings.xml"
-            original.write_text("old\\n")
+            original.write_text("old\n")
             patch = root / "patch.diff"
             patch.write_text(HEADER + modify("res/values/strings.xml", "old", "new"))
             command = ["git", "apply", "--directory=" + str(decoded),
@@ -71,15 +71,15 @@ class SettingsAdapterTests(unittest.TestCase):
             forward = subprocess.run(command[:2] + ["--check"] + command[2:],
                                      cwd=root, capture_output=True)
             self.assertEqual(forward.returncode, 0, forward.stderr.decode())
-            self.assertEqual(original.read_text(), "old\\n")
+            self.assertEqual(original.read_text(), "old\n")
             applied = subprocess.run(command, cwd=root, capture_output=True)
             self.assertEqual(applied.returncode, 0, applied.stderr.decode())
-            self.assertEqual(original.read_text(), "new\\n")
+            self.assertEqual(original.read_text(), "new\n")
             reversed_check = subprocess.run(
                 command[:2] + ["--reverse", "--check"] + command[2:],
                 cwd=root, capture_output=True)
             self.assertEqual(reversed_check.returncode, 0, reversed_check.stderr.decode())
-            self.assertEqual(original.read_text(), "new\\n")
+            self.assertEqual(original.read_text(), "new\n")
 
     def test_new_translation_file_patch_is_never_filtered(self):
         with tempfile.TemporaryDirectory() as tmp:
