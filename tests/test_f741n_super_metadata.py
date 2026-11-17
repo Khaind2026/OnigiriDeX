@@ -33,7 +33,7 @@ def synthetic_super():
     ]
     table = b"".join(rows)
     hdr = bytearray(128)
-    struct.pack_into("<IHHI", hdr, 0, 0x414C5030, 2, 0, 128)
+    struct.pack_into("<IHHI", hdr, 0, 0x414C5030, 10, 2, 128)
     struct.pack_into("<I", hdr, 44, len(table))
     hdr[48:80] = hashlib.sha256(table).digest()
     offset = 0
@@ -51,6 +51,7 @@ class SuperParserTests(unittest.TestCase):
         data = synthetic_super()
         parsed = logical_partitions(data)
         self.assertTrue(parsed["checksums_valid"])
+        self.assertEqual(parsed["header_version"], "10.2")
         self.assertEqual(parsed["geometry"]["metadata_slots"], 2)
         self.assertEqual(parsed["groups"][0]["name"], "group_a")
         self.assertEqual(parsed["partitions"][0]["name"], "system_a")
@@ -72,6 +73,16 @@ class SuperParserTests(unittest.TestCase):
         self.assertTrue(sparse)
         self.assertEqual(preview, raw)
         self.assertEqual(logical_partitions(preview)["partitions"][0]["name"], "system_a")
+
+    def test_reject_incorrect_major_version_even_with_valid_checksum(self):
+        raw = bytearray(synthetic_super())
+        pos = 12288
+        struct.pack_into("<H", raw, pos + 4, 2)
+        header = bytearray(raw[pos:pos + 128])
+        header[12:44] = bytes(32)
+        raw[pos + 12:pos + 44] = hashlib.sha256(header).digest()
+        with self.assertRaisesRegex(ValueError, "major 10"):
+            logical_partitions(raw)
 
     def test_corrupt_metadata_checksum_rejected(self):
         raw = bytearray(synthetic_super())
