@@ -499,3 +499,37 @@ bash scripts/apply_b6q_settings.sh --resume
 Neither the previously verified engineering super preview nor the
 original Odin firmware files are modified by this change. Do not flash
 any engineering preview.
+
+
+### 2026-11-18 milestone: Settings / DeX branding patch replay completed
+
+Debian build output confirms the complete OnigiriDeX Settings patch
+sequence has been replayed on the F956N framework for Flip6 F741N and
+all affected APK/JAR packages have been rebuilt. The terminal ended with:
+
+`DuyKhaiDeX b6q Settings/brand patch replay completed (not boot-tested).`
+
+Rebuilt packages included SecSettings, DesktopSystemUI, SystemUI,
+framework.jar, services.jar, Knox SDK, SetupWizard, SettingsProvider,
+DAAgent, SmartCapture, MultiSoundSetting and SettingsIntelligence.
+
+Do not rerun the Settings patch or re-extract stock images. The new
+checkpoint file is work_dir/.b6q-settings-patched. The next step is
+repacking a **separate** super engineering preview using the existing
+Onigiri pipeline:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/build_super_b6q.sh
+bash scripts/build_super_b6q.sh --build
+```
+
+When the marker exists, the packer emits:
+`out/b6q/build/DuyKhaiDeX_F741N_BRANDED_SUPER_PREVIEW_NOT_FOR_FLASH.img`
+
+The previous DeX-only preview is retained. The new output is NOT FOR
+FLASH: AVB/vbmeta compatibility, boot/kernel configuration, Samsung
+boot-chain handling and actual DeX behavior on Flip6 are unverified.
+Do not equate passing patch/app rebuilds or image pack/unpack with a
+bootable ROM.
