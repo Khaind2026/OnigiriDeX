@@ -1,0 +1,23 @@
+name: DuyKhaiDeX Flip6 preflight tests
+
+on:
+  push:
+    branches: [dk-f741n-oneui7-port]
+  pull_request:
+    paths:
+      - 'scripts/preflight_f741n.py'
+      - 'tests/test_f741n_preflight.py'
+      - '.github/workflows/f741n-preflight.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-firmware-inventory:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile Python preflight
+        run: python3 -m py_compile scripts/preflight_f741n.py tests/test_f741n_preflight.py
+      - name: Test mixed model selection without firmware files
+        run: python3 -m unittest discover -s tests -p 'test_f741n_preflight.py' -v
