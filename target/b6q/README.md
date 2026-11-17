@@ -283,3 +283,36 @@ named `DuyKhaiDeX_F741N_BRANDED_SUPER_PREVIEW_NOT_FOR_FLASH.img`.
 Both are engineering previews only; **do not flash**. Neither contains
 a completed F741N AVB/boot-chain compatibility solution or a
 device-tested Odin AP. Preserve upstream license and credits.
+
+
+### 2026-11-18: resume F956N Settings after missing en-rCA locale
+
+On the user's Debian host, the original Settings replay stopped at its first
+SystemUI patch because F956N lacks `res/values-en-rCA/strings.xml`.
+The original `git apply` is all-or-nothing for that patch, so this first
+attempt made **no Settings patch changes**. The previously verified
+DeX-only super preview is untouched.
+
+A Fold6-specific adapter now checks each decoded APK/JAR before applying
+a copied upstream patch. **Only** diff sections editing an *absent existing*
+`res/values-*/strings.xml` are omitted. It never drops smali, public
+resource IDs, XML other than optional locale strings, or new-file patches.
+The upstream OnigiriDeX patch files remain intact.
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/apply_b6q_settings.sh --resume
+```
+
+`--resume` verifies the previous log was the first-patch missing-locale
+failure; later retries use a SHA-pinned ledger at
+`out/target/b6q/SM-F741N/work_dir/.b6q-settings-patch-progress`
+to skip only upstream patches already applied successfully.
+If a Fold6 smali or critical resource hunk differs, replay stops and records
+its exact mismatch in `out/b6q/port-logs`. Do not reset the 7 source
+images, overwrite the existing super, or blindly skip the failing smali.
+
+Only after `DuyKhaiDeX b6q Settings/brand patch replay completed` may a
+**separate** branded engineering super preview be rebuilt using
+`bash scripts/build_super_b6q.sh --build`. This is still not a flashable ROM.
