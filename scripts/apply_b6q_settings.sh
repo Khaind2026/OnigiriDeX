@@ -80,7 +80,8 @@ echo "- Log: $LOG"
 
 apply_one_target()
 {
-    local target="$1" partition relative decoded original name key staged_patch
+    local target="$1" source_root="${2:-$SETTINGS_SRC}" module="${3:-settings}"
+    local partition relative decoded original name key staged_patch
     partition="${target%%/*}"
     if [[ "$partition" = system ]]; then
         relative="$target"
@@ -90,15 +91,15 @@ apply_one_target()
         decoded="$APKTOOL_DIR/$target"
     fi
     DECODE_APK "$partition" "$relative" || return 1
-    for original in "$SETTINGS_SRC/$target"/*.patch; do
+    for original in "$source_root/$target"/*.patch; do
         [[ -f "$original" ]] || continue
-        name="${original#"$SETTINGS_SRC"/}"
-        key="$name|$(sha256sum "$original" | awk '{print $1}')"
+        name="${original#"$source_root"/}"
+        key="$module/$name|$(sha256sum "$original" | awk '{print $1}')"
         if grep -Fxq -- "$key" "$LEDGER"; then
             echo "- Already patched: $name"
             continue
         fi
-        if grep -Fq -- "$name|" "$LEDGER"; then
+        if grep -Fq -- "$module/$name|" "$LEDGER"; then
             echo "Patch changed since earlier application: $name" >&2
             return 1
         fi
@@ -128,6 +129,22 @@ apply_one_target()
         fi
     done
 }
+
+# Original make_rom.sh processes onigiri/mods/pif BEFORE settings (sorted
+# module path order). SamsungPropsHooks assumes earlier PlayIntegrityHooks
+# and KeyStoreHooks call sites exist in Instrumentation and PackageManager.
+# The prior b6q runner skipped this prerequisite; replay ONLY the original
+# pif framework & service smali series here, with SHA-pinned checkpoints.
+# This does not claim Play Integrity is configured or working on Flip6.
+PIF_SRC="$SRC_DIR/onigiri/mods/pif/smali"
+echo "- Restoring original OnigiriDeX prerequisite order (pif before settings)"
+for prereq in system/framework/framework.jar system/framework/services.jar; do
+    if [[ ! -d "$PIF_SRC/$prereq" ]]; then
+        echo "Required upstream prerequisite patch directory missing: $PIF_SRC/$prereq" >&2
+        exit 1
+    fi
+    apply_one_target "$prereq" "$PIF_SRC" pif || exit 1
+done
 
 # Same source patch set as Onigiri. Start with previously failed SystemUI
 # patch to solve the observed F956N resource difference first.
