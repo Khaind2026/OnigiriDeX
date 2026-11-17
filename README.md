@@ -1,6 +1,6 @@
-# OnigiriDeX
+# DuyKhaiDeX
 
-Onigiri is a custom system for the **Galaxy Z Flip5 (SM-F731B and SM-F731N)**. It's built on Android 15 / One UI 7 and based on [UN1CA](https://github.com/salvogiangri/UN1CA/tree/fifteen).
+DuyKhaiDeX is a custom system for the **Galaxy Z Flip5 (SM-F731B and SM-F731N)**. It's built on Android 15 / One UI 7 and based on [UN1CA](https://github.com/salvogiangri/UN1CA/tree/fifteen).
 
 ## What it does
 
@@ -103,7 +103,7 @@ Samsung's own software needs. Never flash Fold5 files. The first start takes a
 few minutes.
 
 **Updating.** The phone tells you when a new version is out. Open the
-notification, or **Settings → DK điều chỉnh → Software update**, to see
+notification, or **Settings → DuyKhaiDeX → Software update**, to see
 what's new, then tap **Download and install**: the phone downloads only what
 changed, restarts, installs it in about a minute and starts again. Your data
 stays, and it works from any recent version, not just the one before. If your
@@ -184,12 +184,12 @@ A few things to keep in mind:
 
 ## Extra features
 
-Onigiri's own settings live in **Settings → DK điều chỉnh**, in English or
+DuyKhaiDeX's own settings live in **Settings → DuyKhaiDeX**, in English or
 Vietnamese following the phone's language. Here's what each part does.
 
 ### DeX zones
 
-![Zone layouts in DK điều chỉnh](docs/images/onigiri-settings-zones.png)
+![Zone layouts in DuyKhaiDeX](docs/images/onigiri-settings-zones.png)
 
 Off by default. Zones split the monitor into fixed areas, like a map on one
 side and other apps next to it. You can pick a map on the left or right, three
@@ -290,7 +290,7 @@ charges and back on when charging stops, if it was on before.
 while the phone charges. In stock Android it only stops the screen from
 turning off, and the screen still dims at the screen timeout.
 
-The experimental [High performance option](docs/thermal.md) in DK điều chỉnh is
+The experimental [High performance option](docs/thermal.md) in DuyKhaiDeX is
 off by default, with English and Vietnamese text. With an external cooler, it
 keeps DeX at a steady 144 Hz (143 fps instead of 127–131 in TestUFO) and holds
 higher clocks under sustained load, without raising peak clocks. Restart to apply.
@@ -330,7 +330,7 @@ higher clocks under sustained load, without raising peak clocks. Restart to appl
 
 ### Built-in components
 
-**Settings → DK điều chỉnh** has a switch and a page for each component.
+**Settings → DuyKhaiDeX** has a switch and a page for each component.
 The switch saves your choice; Status shows what is running. Switch changes
 and component updates take effect after a restart.
 
