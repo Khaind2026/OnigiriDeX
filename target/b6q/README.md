@@ -1,5 +1,46 @@
 # DuyKhaiDeX experimental target: Samsung Galaxy Z Flip6 (b6q)
 
+## Direct b5q → b6q ROM port driver (current route)
+
+This port now **reuses the working Flip5 OnigiriDeX build architecture**
+instead of building more inventory utilities. It selects original stock
+EROFS images already extracted by the user's Debian machine, invokes
+`EXTRACT_EROFS_PARTITION` from `scripts/utils/firmware_utils.sh`, and
+replays the exact Flip5 DeX smali patch tree through the existing
+`scripts/internal/apply_modules.sh` and `scripts/apktool.sh` pipeline.
+The device-specific b6q DeX module follows the exact `module.prop` +
+`customize.sh` structure from b5q.
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/port_b6q.sh all
+```
+
+The first run creates `out/target/b6q/SM-F741N/work_dir` using:
+- `system`, `product`, `system_ext` from **F956N (Fold6)**
+- `vendor`, `odm`, `system_dlkm`, `vendor_dlkm` from **F741N (Flip6)**
+
+The script then applies native DeX feature flags and **tries the actual
+b5q services.jar / DesktopSystemUI / SystemUI / SmartCapture smali patches**
+against the Fold6 binaries, compiling with the original apktool pipeline.
+A patch incompatibility stops immediately and records the failing hunk in
+`out/b6q/port-logs`; the prepared work directory is preserved. There is
+no need to download, inspect, or stage firmware again.
+
+`bash scripts/port_b6q.sh prepare` can be used by itself for work-tree
+preparation, and `bash scripts/port_b6q.sh apply` runs the patch step.
+
+**Important constraints:** The original b5q native SurfaceFlinger patch
+checks a Fold5-specific SHA-256 and hard-coded instruction offsets. The b6q
+module intentionally does not copy that native binary patch, Flip5-specific
+vendor SELinux rule, camera HAL offset, or cover-screen geometry. They must
+be **rebased to F956N/F741N**, not flashed blindly. This route produces a
+port work directory, NOT a fully tested/bootable Odin AP. Upstream license
+and credits remain in place.
+
+---
+
 **Research-only scaffold. No validated build, no Odin AP and no safe flash output.**
 
 This directory is intentionally NOT wired into the existing
