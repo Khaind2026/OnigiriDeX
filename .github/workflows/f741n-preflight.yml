@@ -15,6 +15,10 @@ on:
       - 'scripts/audit_b6q_framework.py'
       - 'scripts/report_b6q_dex_candidates.py'
       - 'scripts/stage_b6q_dex_assets.py'
+      - 'scripts/port_b6q.sh'
+      - 'target/b6q/config.sh'
+      - 'target/b6q/patches/dex/customize.sh'
+      - 'target/b6q/patches/dex/module.prop'
       - 'target/b6q/port-plan.json'
       - 'tests/test_f741n_preflight.py'
       - 'tests/test_f741n_import_resume.py'
@@ -40,3 +44,11 @@ jobs:
         run: python3 -m py_compile scripts/preflight_f741n.py scripts/import_duykhaidex_f741n.py scripts/inspect_f741n_f956n_archives.py scripts/inspect_super_f741n_f956n.py scripts/plan_f741n_f956n_port.py scripts/extract_b6q_images.py scripts/verify_b6q_stage.py scripts/audit_b6q_framework.py scripts/report_b6q_dex_candidates.py scripts/stage_b6q_dex_assets.py tests/test_f741n_preflight.py tests/test_f741n_import_resume.py tests/test_f741n_archive_inspection.py tests/test_f741n_super_metadata.py tests/test_f741n_port_capacity.py tests/test_f741n_extraction.py tests/test_f741n_stage_verification.py tests/test_f741n_framework_audit.py tests/test_f741n_dex_report.py tests/test_f741n_dex_assets.py
       - name: Test mixed model selection without firmware files
         run: python3 -m unittest discover -s tests -p 'test_f741n*.py' -v
+
+      - name: Validate b6q direct port driver (same b5q module structure)
+        run: |
+          bash -n scripts/port_b6q.sh
+          bash -n target/b6q/config.sh target/b6q/patches/dex/customize.sh
+          bash scripts/port_b6q.sh --help
+          test -f target/b5q/patches/dex/smali/system/framework/services.jar/0001-Add-external-display-refresh-policy.patch
+          test -f target/b6q/patches/dex/customize.sh
