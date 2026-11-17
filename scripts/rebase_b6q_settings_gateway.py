@@ -82,11 +82,8 @@ def rebase(patch_text: str, decoded: Path):
     between = body[anchor.end():array_match.start()]
     if "filled-new-array" in between:
         raise ValueError("Unrelated array between MainActivity anchor and candidate")
-    if old_last != anchor_reg and not re.search(
-        rf'\bconst-string(?:/jumbo)?[ \t]+v{old_last},[ \t]*"[^"\n]+"',
-        between
-    ):
-        raise ValueError(f"Final v{old_last} not initialized after MainActivity anchor")
+    # Samsung may initialize the last vN register before the known anchor.
+    # Its initialization is checked against the whole pre-array method below.
     new_reg = old_last + 1
     if old_last < 2 or new_reg > 254:
         raise ValueError("Unsupported contiguous array register range")
