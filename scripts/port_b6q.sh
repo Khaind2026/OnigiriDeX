@@ -47,7 +47,7 @@ source "$SRC_DIR/scripts/utils/firmware_utils.sh"
 source "$SRC_DIR/scripts/utils/module_utils.sh"
 
 prepare()
-{
+(
     if [ -e "$WORK_DIR" ] || [ -L "$WORK_DIR" ]; then
         [ -f "$WORK_DIR/.b6q-prepared" ] || {
             echo "Existing work directory has no b6q marker; refusing to overwrite: $WORK_DIR" >&2
@@ -67,7 +67,7 @@ prepare()
     mkdir -p "$DEVICE_OUTPUT"
     local stage
     stage="$(mktemp -d "$DEVICE_OUTPUT/.prepare-b6q.XXXXXX")"
-    trap 'rm -rf -- "$stage"' RETURN
+    trap 'rm -rf -- "$stage"' EXIT
     mkdir -p "$stage/configs"
     local part model image
 
@@ -117,12 +117,11 @@ dest = Path(sys.argv[1])
 PY
     [ ! -e "$WORK_DIR" ] || { echo "Work dir created concurrently" >&2; return 1; }
     mv "$stage" "$WORK_DIR"
-    trap - RETURN
     echo "DuyKhaiDeX b6q source work directory prepared: $WORK_DIR"
-}
+)
 
 apply_port()
-{
+(
     [ -f "$WORK_DIR/.b6q-prepared" ] || {
         echo "Prepare the b6q source work directory first." >&2
         return 1
@@ -143,7 +142,7 @@ apply_port()
     mkdir -p "$OUT_DIR/b6q/port-logs"
     local modroot
     modroot="$(mktemp -d "$OUT_DIR/b6q/.b6q-modules.XXXXXX")"
-    trap 'rm -rf -- "$modroot"' RETURN
+    trap 'rm -rf -- "$modroot"' EXIT
 
     # Reuse THE SAME Fold5 smali patches. On Samsung F956N a hunk mismatch is
     # an actionable porting error; no unsafe binary offset rewrite is attempted.
