@@ -466,3 +466,36 @@ Previous DeX patches, other Settings patch checkpoints and the existing
 verified non-flashable engineering super preview remain unchanged.
 Success still requires actually rebuilding SecSettings.apk and testing
 the eventual b6q ROM on compatible hardware before flashing.
+
+
+### Fold6 Settings 0018–0020 XML rebasing (2026-11-18)
+
+The local F956N Settings replay completed 0016 DeX zone layouts and 0017
+dark-mode description, then stopped at 0018 car-standby strings.xml
+(old Fold5 hunk around line 15394 did not match).
+
+The direct port runner now uses scripts/rebase_b6q_additive_strings.py
+for Settings patches 0018, 0019, 0020, 0021, 0023–0029 that contain
+additive string resources. It reads the decoded F956N strings.xml,
+strictly validates new resource keys, inserts additions before the
+unique Onigiri settings category, and recreates only this one diff
+section in a disposable patch copy. For 0020, it also permits an
+EXACT old-value-verified same-key replacement of the car standby
+summary; arbitrary resource deletions/renames are refused. Non-XML
+port patches are unchanged and must still pass normal git apply.
+
+GitHub Actions tests now apply the REAL original 0018, 0019 and 0020
+strings sections in sequence to an F956N-like XML fixture using git
+apply --check before modifications. The workflow does not have
+the user's firmware and cannot verify every later Fold6 APK hunk.
+
+Continue from the existing SHA checkpoint ledger:
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/apply_b6q_settings.sh --resume
+```
+
+Neither the previously verified engineering super preview nor the
+original Odin firmware files are modified by this change. Do not flash
+any engineering preview.
