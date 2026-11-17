@@ -8,6 +8,7 @@ on:
       - 'scripts/preflight_f741n.py'
       - 'scripts/import_duykhaidex_f741n.py'
       - 'tests/test_f741n_preflight.py'
+      - 'tests/test_f741n_import_resume.py'
       - '.github/workflows/f741n-preflight.yml'
   workflow_dispatch:
 
@@ -19,6 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Compile Python preflight
-        run: python3 -m py_compile scripts/preflight_f741n.py scripts/import_duykhaidex_f741n.py tests/test_f741n_preflight.py
+        run: python3 -m py_compile scripts/preflight_f741n.py scripts/import_duykhaidex_f741n.py tests/test_f741n_preflight.py tests/test_f741n_import_resume.py
       - name: Test mixed model selection without firmware files
-        run: python3 -m unittest discover -s tests -p 'test_f741n_preflight.py' -v
+        run: python3 -m unittest discover -s tests -p 'test_f741n*.py' -v
