@@ -122,6 +122,15 @@ apply_one_target()
             python3 "$SRC_DIR/scripts/rebase_b6q_dex_zone_strings.py" \
                 --patch "$staged_patch" --decoded "$decoded" || return 1
         fi
+        if [[ "$module/$name" == "settings/system/priv-app/SecSettings/SecSettings.apk/"* ]]; then
+            case "$(basename "$original")" in
+                0018-*|0019-*|0021-*|0023-*|0024-*|0025-*|0026-*|0027-*|0028-*|0029-*)
+                    echo "- Rebasing additive Settings labels onto current F956N XML: $name"
+                    python3 "$SRC_DIR/scripts/rebase_b6q_additive_strings.py" \
+                        --patch "$staged_patch" --decoded "$decoded" || return 1
+                    ;;
+            esac
+        fi
         # Confirm actual applicability instead of relying on a previous
         # attempt's log formatting. git apply --check does not modify files.
         if LC_ALL=C git apply --check --directory="$decoded" --unsafe-paths \
