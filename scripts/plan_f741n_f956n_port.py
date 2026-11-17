@@ -72,10 +72,10 @@ def report_from_data(metadata, plan):
     for partition, model in specs.items():
         if model not in devices:
             raise ValueError(f"Invalid firmware source for {partition}: {model}")
-        if partition not in indexes[model]:
-            raise ValueError(f"Partition {partition} missing in source {model}")
         if partition not in indexes["SM-F741N"]:
             raise ValueError(f"Partition {partition} absent on actual F741N layout")
+        if partition not in indexes[model]:
+            raise ValueError(f"Partition {partition} missing in source {model}")
         item = indexes[model][partition]
         if item["group"] != EXPECTED_GROUP:
             raise ValueError(f"Unexpected partition group for {partition} on {model}")
