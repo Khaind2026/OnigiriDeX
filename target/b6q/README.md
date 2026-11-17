@@ -42,3 +42,50 @@ Run `python3 scripts/plan_f741n_f956n_port.py` after generating
 A positive capacity estimate is NOT proof that DeX works or that a ROM boots.
 Upstream license, NOTICE, copyrights, and appropriate author credits are
 preserved even when the display branding is DuyKhaiDeX.
+
+
+## Phase 4: staged stock partition extraction
+
+The user's real LP report produced **Capacity estimate: PASS**:
+F741N group maximum 13,196.0 MiB; donor-system/target-hardware
+estimated occupancy 10,774.0 MiB, leaving 2,422.0 MiB. This is a
+space estimate, not a successful firmware build.
+
+Run these **read-only preflight** checks before allocating large images:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+export PATH="$PWD/out/tools/bin:$PATH"
+python3 scripts/extract_b6q_images.py --model SM-F956N
+python3 scripts/extract_b6q_images.py --model SM-F741N
+```
+
+The script prints free storage, estimated maximum required storage, and selected
+partitions for each model. By default it creates no image files and does not
+use the phone. It requires `lz4` and `lpunpack`, and uses existing verified
+Odin imports and `out/reports/f741n-f956n-super-metadata.json`. It
+**refuses to overwrite** existing extracted output.
+
+Only if preflight reports sufficient free storage, use **explicit** extraction,
+one model at a time:
+
+```bash
+python3 scripts/extract_b6q_images.py --model SM-F956N --extract
+python3 scripts/extract_b6q_images.py --model SM-F741N --extract
+```
+
+Result paths:
+`out/b6q/extracted/SM-F956N/{system,product,system_ext}.img` and
+`out/b6q/extracted/SM-F741N/{vendor,odm,system_dlkm,vendor_dlkm}.img`,
+alongside a per-device `manifest.json`.
+
+For each model the tool streams stock `super.img.lz4` from the matching
+archive into a **temporary** raw super file, unpacks only selected images
+using `lpunpack -p`, checks extracted byte sizes against LP metadata,
+and publishes a complete model folder only when checks pass.
+Temporary files are cleaned if extraction fails. Never run both extractions
+concurrently on limited storage. Keep original firmware on drive D mounted.
+
+**No** b6q system builder, Samsung APK/JAR DeX port, Odin AP, or tested ROM
+is produced by this tool. Do not flash images from this staging directory.
