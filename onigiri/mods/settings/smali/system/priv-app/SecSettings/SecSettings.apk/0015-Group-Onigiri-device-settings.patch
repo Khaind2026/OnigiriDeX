@@ -27,7 +27,7 @@ diff --git a/res/values/strings.xml b/res/values/strings.xml
      <string name="onigiri_external_reconnect">Reconnect the external display to apply</string>
      <string name="onigiri_autoboot_title">Power on when power connected</string>
 -    <string name="onigiri_autoboot_summary">Automatically start the phone when a charger or USB power is connected. Waits until the battery reaches 5%.</string>
-+    <string name="onigiri_settings_category_title">Onigiri settings</string>
++    <string name="onigiri_settings_category_title">Duy Khải Điều Chỉnh</string>
  </resources>
 diff --git a/res/values/public.xml b/res/values/public.xml
 --- a/res/values/public.xml
