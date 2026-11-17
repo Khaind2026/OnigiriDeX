@@ -86,7 +86,15 @@ FW_DIR='/mnt/d/mod fold 6/SAMFW.COM_SM-F741N_SKC_F741NKSS2BYGB_fac'
 python3 scripts/preflight_f741n.py --flip6 "$FW_DIR" --fold6 "$FW_DIR"
 ```
 
-`inventory_passed_not_buildable` means only that the four Odin archive names for both models match the expected identifiers; it does **not** verify their contents. Tests without device data:
+`inventory_passed_not_buildable` means only that the four Odin archive names for both models match the expected identifiers; it does **not** verify their contents.
+
+Once the inventory passes, optionally **verify Odin MD5 checksums and import both models separately as symlinks**, without re-copying the 30 GB of source files:
+
+```bash
+python3 scripts/import_duykhaidex_f741n.py --folder "$FW_DIR"
+```
+
+This reads all Odin archives for MD5 integrity (may be I/O intensive) and writes `out/odin/SM-F741N_SKC/` and `out/odin/SM-F956N_SKC/` symlinks plus import metadata. Keep the source firmware folder on drive D unchanged and mounted. The importer refuses to overwrite existing imports. **It does not extract partition images, build an AP or make a ROM bootable.** Tests without device data:
 
 ```bash
 python3 -m unittest discover -s tests -p 'test_f741n_preflight.py' -v
