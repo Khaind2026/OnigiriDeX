@@ -107,6 +107,11 @@ apply_one_target()
         cp "$original" "$staged_patch"
         python3 "$SRC_DIR/scripts/adapt_b6q_settings_patches.py" \
             --patch "$staged_patch" --decoded "$decoded" || return 1
+        if [[ "$module/$name" == "settings/system/priv-app/SecSettings/SecSettings.apk/0001-Add-Onigiri-Settings.patch" ]]; then
+            echo "- Rebasing SettingsGateway fragment array to F956N smali"
+            python3 "$SRC_DIR/scripts/rebase_b6q_settings_gateway.py" \
+                --patch "$staged_patch" --decoded "$decoded" || return 1
+        fi
         # Confirm actual applicability instead of relying on a previous
         # attempt's log formatting. git apply --check does not modify files.
         if LC_ALL=C git apply --check --directory="$decoded" --unsafe-paths \
