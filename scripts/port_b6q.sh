@@ -8,13 +8,10 @@ export SRC_DIR
 export OUT_DIR="$SRC_DIR/out"
 export TOOLS_DIR="$OUT_DIR/tools"
 export PATH="$TOOLS_DIR/bin:$PATH"
-export TARGET_CODENAME=b6q
-export TARGET_MODEL=SM-F741N
-export SOURCE_FIRMWARE=SM-F956N/SKC
-export TARGET_FIRMWARE=SM-F741N/SKC
-export TARGET_HAS_SYSTEM_EXT=true
-export TARGET_SINGLE_SYSTEM_IMAGE=qssi
-export ROM_CODENAME=DuyKhaiDeX
+# Reuse the device-config convention from target/b5q/config.sh.
+source "$SRC_DIR/target/b6q/config.sh"
+export TARGET_CODENAME TARGET_MODEL SOURCE_FIRMWARE TARGET_FIRMWARE
+export TARGET_HAS_SYSTEM_EXT TARGET_SINGLE_SYSTEM_IMAGE ROM_CODENAME
 export ROM_VERSION="$(git -C "$SRC_DIR" rev-parse --short HEAD)"
 export WORK_DIR="$OUT_DIR/target/b6q/SM-F741N/work_dir"
 export APKTOOL_DIR="$OUT_DIR/target/b6q/SM-F741N/apktool"
