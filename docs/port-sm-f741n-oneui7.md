@@ -155,3 +155,22 @@ geometry. In that case capture the error; do not force the Flip5 geometry.
 After a successful report, compare the target partition/group limits with
 the donor, inspect their Android/VINTF/SELinux dependencies and then implement
 a b6q-specific build before producing any Odin AP.
+
+### liblp header parser correction (2026-11-18)
+
+If the old scanner reported `Unexpected LP primary metadata header (slot 0)`,
+it rejected AOSP's standard `LpMetadataHeader.major_version=10` as though
+it were 1 or 2. Android defines major **10**, minor **0..2**; the previous
+condition confused the major version with the minor version. This was
+corrected in `scripts/inspect_super_f741n_f956n.py`. The geometry and header
+layout remain unchanged and neither Odin archives nor device firmware need
+re-importing. Retry with:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+python3 scripts/inspect_super_f741n_f956n.py
+```
+
+If a different error is reported after this correction, preserve the exact
+terminal text; don't attempt a ROM flash or override structural assertions.
