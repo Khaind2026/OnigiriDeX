@@ -379,3 +379,38 @@ identifies the exact unadapted hunk and leaves already applied patches
 untouched. Never use `--reject` or unconditional patch fuzz to force
 critical framework changes. The existing verified engineering super
 preview is unchanged; do not flash it.
+
+
+### SecSettings F956N SettingsGateway fragment-array rebase (2026-11-18)
+
+The real Fold6 Settings replay now passes `framework.jar`, `knoxsdk.jar`,
+`services.jar`, `MultiSoundSetting.apk`, and two earlier SystemUI /
+DAAgent Settings patch targets. The next failure is
+`system/priv-app/SecSettings/SecSettings.apk/0001-Add-Onigiri-Settings.patch`
+at `smali_classes2/com/android/settings/core/gateway/SettingsGateway.smali`.
+The old Fold5 patch assumes the Settings gateway fragment array ends at
+`v139` and inserts `OnigiriSettingsFragment` as `v140`. The real Fold6
+list isn't necessarily identical.
+
+`scripts/rebase_b6q_settings_gateway.py` now generates an exact
+Fold6-specific **git diff hunk** from the decoded F956N SettingsGateway,
+only in a temporary copy of the original Onigiri patch. It checks one
+unambiguous static initializer, a contiguous string array, availability
+of the next register, and extends the method register allocation when
+needed; all other original patch sections remain unchanged. The patch is
+then checked with the same forward/reverse `git apply` guards.
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/apply_b6q_settings.sh --resume
+```
+
+Already applied upstream patches are skipped using the existing
+SHA-pinned ledger. If the actual F956N method differs too much (e.g. it
+uses the next register for another purpose), **the rebase refuses** and
+prints a specific reason. No smali, APK or super image is altered by the
+rebase tool itself; a successful upstream `git apply` still records the
+patch in the ledger. Do not use `git apply --reject` or blindly bump
+registers. Previous `super.img` preview remains intact and must not
+be flashed.
