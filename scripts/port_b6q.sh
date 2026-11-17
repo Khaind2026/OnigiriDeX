@@ -175,7 +175,7 @@ apply_port()
     fi
     touch "$WORK_DIR/.b6q-dex-patched"
     echo "DeX source patch replay complete in $WORK_DIR (NOT boot-tested; no Odin AP)."
-}
+)
 
 case "$MODE" in
     prepare) prepare ;;
