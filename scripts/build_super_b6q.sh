@@ -105,9 +105,10 @@ echo "- Packing super.img using F741N's real geometry"
 "${SUPER_COMMAND[@]}"
 simg2img "$STAGE/super.img" "$STAGE/super.raw.img"
 mkdir "$STAGE/unpacked"
+echo "- Unpacking all 7 partitions in one pass (avoids repeated 13 GiB reads)"
+lpunpack "$STAGE/super.raw.img" "$STAGE/unpacked"
 for part in system product system_ext vendor odm vendor_dlkm system_dlkm; do
     echo "- Verifying packed $part"
-    lpunpack -p "$part" "$STAGE/super.raw.img" "$STAGE/unpacked"
     cmp "$STAGE/$part.img" "$STAGE/unpacked/$part.img" || {
         echo "Packed $part differs from original built image" >&2
         exit 1
