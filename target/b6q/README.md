@@ -316,3 +316,30 @@ images, overwrite the existing super, or blindly skip the failing smali.
 Only after `DuyKhaiDeX b6q Settings/brand patch replay completed` may a
 **separate** branded engineering super preview be rebuilt using
 `bash scripts/build_super_b6q.sh --build`. This is still not a flashable ROM.
+
+### Resume fix: old log-line guard removed (2026-11-18)
+
+The user's following attempt was rejected with
+`Prior patch state cannot be verified as atomic first-patch failure.`
+The old script incorrectly required a log to have one exact
+`^- Applying ` line; log formatting is not a reliable measure of
+whether a patch was committed. This was a **runner guard bug**, not a
+new firmware or Samsung DeX error.
+
+The b6q Settings runner now checks each pending, adapted original patch
+directly against the decoded F956N APK/JAR via
+`git apply --check` (not yet applied) and
+`git apply --reverse --check` (already applied), with an upstream-file
+SHA-pinned per-patch progress ledger. On ambiguous/partial source state
+it stops without modifying or rebuilding further files. No deletion of
+`.b6q-settings-attempted`, image imports or source tree is necessary.
+Run only:
+
+```bash
+cd ~/OnigiriDeX
+git pull --ff-only
+bash scripts/apply_b6q_settings.sh --resume
+```
+
+This does **not** overwrite the existing verified engineering super
+preview or constitute a safe-to-flash ROM.
