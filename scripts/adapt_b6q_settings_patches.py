@@ -21,9 +21,26 @@ def adapt_patch(text: str, decoded_root: Path):
     skipped = []
     for section in sections[1:]:
         m = re.match(r"diff --git a/([^\n]+) b/([^\n]+)\n", section)
-        if not m or m.group(1) != m.group(2):
-            raise ValueError("Unsupported git patch section (cannot adapt safely)")
-        path = m.group(2)
+        if not m:
+            raise ValueError("Malformed git diff header (cannot adapt safely)")
+        src, path = m.group(1), m.group(2)
+        # Some original Onigiri patches use the peculiar new-file header
+        # 'diff --git a/b/<file> b/<file>'. The actual destination is in the
+        # b/ path and +++ b/<file>. git apply handles this as file creation.
+        # Do not rewrite or discard this section. Only permit the mismatch
+        # for exact new-file metadata; existing-file renames must be reviewed.
+        if src != path:
+            is_source_new = (
+                src == "b/" + path
+                and re.search(r"(?m)^new file mode 100644$", section) is not None
+                and re.search(r"(?m)^--- /dev/null$", section) is not None
+                and ("+++ b/" + path + "\\n") in section
+            )
+            if not is_source_new:
+                raise ValueError(
+                    f"Unsupported rename or malformed new-file section: "
+                    f"{src} -> {path}"
+                )
         if (LOCALE.fullmatch(path) and not (decoded_root / path).is_file()
                 and "new file mode " not in section
                 and "--- /dev/null" not in section):
