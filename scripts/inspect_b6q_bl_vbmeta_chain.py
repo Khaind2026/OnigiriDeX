@@ -45,8 +45,9 @@ def extract_stock_bl_vbmeta(archive: Path, temp: Path, lz4="lz4"):
         member = possible[0]
         if member.name != Path(member.name).name or member.name.startswith("."):
             raise ValueError("Unsafe nested BL vbmeta member")
-        if not (256 <= member.size <= MAX_COMPRESSED):
-            raise ValueError("Unexpected compressed BL vbmeta size")
+        min_archive_bytes = 16 if member.name.lower().endswith(".lz4") else 256
+        if not (min_archive_bytes <= member.size <= MAX_COMPRESSED):
+            raise ValueError("Unexpected BL vbmeta member size")
         source = package.extractfile(member)
         if source is None:
             raise ValueError("Unable to read BL vbmeta member")
