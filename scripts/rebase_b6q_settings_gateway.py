@@ -178,7 +178,7 @@ def rebase(patch_text: str, decoded: Path):
     sections[i] = new_section
     return "".join(sections), {
         "old_last_register": old_last,
-        "new_last_register": new_reg,
+        "new_last_register": old_last if occupied else new_reg,
         "registers_declared_before": declared,
         "registers_declared_after": declared_after,
         "strategy": strategy,
