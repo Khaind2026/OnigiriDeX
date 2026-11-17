@@ -57,18 +57,33 @@ def adapt_tree(patches: Path, apktool_root: Path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--patches", type=Path, required=True)
-    parser.add_argument("--apktool-dir", type=Path, required=True)
+    parser.add_argument("--patch", type=Path, help="One disposable patch copy")
+    parser.add_argument("--decoded", type=Path, help="One already decoded APK/JAR directory")
+    parser.add_argument("--patches", type=Path, help="Disposable patches tree")
+    parser.add_argument("--apktool-dir", type=Path, help="Decoded APK/JAR tree")
     args = parser.parse_args()
     try:
-        changes = adapt_tree(args.patches, args.apktool_dir)
+        if args.patch and args.decoded and not args.patches and not args.apktool_dir:
+            if not args.decoded.is_dir():
+                raise ValueError(f"Decoded APK/JAR directory not present: {args.decoded}")
+            original = args.patch.read_text()
+            updated, skipped = adapt_patch(original, args.decoded)
+            if skipped:
+                args.patch.write_text(updated)
+            for name in skipped:
+                print(f"Skipping optional translation absent in Fold6: {name}", flush=True)
+            return
+        if args.patches and args.apktool_dir and not args.patch and not args.decoded:
+            changes = adapt_tree(args.patches, args.apktool_dir)
+            for entry in changes:
+                print("Adapted:", entry["patch"])
+                for name in entry["skipped_optional_locales"]:
+                    print("  skipped missing optional translation:", name)
+            print(f"Adapted {len(changes)} disposable patches.")
+            return
+        parser.error("Use --patch and --decoded OR --patches and --apktool-dir")
     except (ValueError, OSError) as e:
         parser.exit(1, f"Patch adaptation failed: {e}\n")
-    for entry in changes:
-        print("Adapted:", entry["patch"])
-        for path in entry["skipped_optional_locales"]:
-            print("  skipped missing optional translation:", path)
-    print(f"Adapted {len(changes)} copied patches; original OnigiriDeX files untouched.")
 
 
 if __name__ == "__main__":
