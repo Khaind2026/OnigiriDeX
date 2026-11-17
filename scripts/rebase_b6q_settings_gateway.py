@@ -5,9 +5,10 @@ The old patch inserts the Settings fragment after v139. Fold6's array size and
 the register count can differ. This creates an equivalent, context-correct
 unified diff from the actual decoded Fold6 smali, in a DISPOSABLE PATCH COPY.
 The original repository patch and the decoded APK are left unchanged.
-Requires a single anchored static initializer, exact MainActivity string,
-first matching v1..vN array after that anchor, and unused vN+1.
-Other string arrays in the method are preserved. Fails closed otherwise.
+Requires an anchored static initializer and a matching String[] array. If
+v(N+1) is occupied, appends after its move-result-object using a new private
+helper with its own registers. Otherwise extends the original contiguous
+range. Original resources and other arrays remain unchanged.
 """
 import argparse
 import difflib
@@ -20,6 +21,21 @@ TARGET_CONST = f'    const-string v{{new}}, "{FRAGMENT}"'
 ARRAY = re.compile(r'^[ \t]*filled-new-array/range \{v1 \.\. v(\d+)\}, \[Ljava/lang/String;', re.MULTILINE)
 END = "\n.end method"
 STATIC_ANCHOR = "com.samsung.android.fast.ui.MainActivity"
+
+HELPER_NAME = "duykhai$appendOnigiriFragment"
+HELPER_SIGNATURE = f"{HELPER_NAME}([Ljava/lang/String;)[Ljava/lang/String;"
+HELPER_SMALI = f""".method private static {HELPER_SIGNATURE}
+    .locals 3
+
+    array-length v0, p0
+    add-int/lit8 v1, v0, 0x1
+    invoke-static {{p0, v1}}, Ljava/util/Arrays;->copyOf([Ljava/lang/Object;I)[Ljava/lang/Object;
+    move-result-object v2
+    check-cast v2, [Ljava/lang/String;
+    const-string v1, "{FRAGMENT}"
+    aput-object v1, v2, v0
+    return-object v2
+.end method"""
 
 
 def rebase(patch_text: str, decoded: Path):
@@ -89,34 +105,66 @@ def rebase(patch_text: str, decoded: Path):
     new_reg = old_last + 1
     if old_last < 2 or new_reg > 254:
         raise ValueError("Unsupported contiguous array register range")
-    # Only one new contiguous register is allowed; never destroy a register
-    # already used elsewhere in the original initializer.
-    if re.search(rf'\bv{new_reg}\b', body):
-        raise ValueError(f"v{new_reg} is already used in F956N initializer; manual rebase needed")
-
     allocation = re.search(r"^\s*\.(locals|registers)\s+(\d+)\s*$", body, re.MULTILINE)
     if not allocation:
         raise ValueError("Cannot establish smali register allocation")
     declared = int(allocation.group(2))
-    # Insert by the *selected match offset*: other arrays may have identical
-    # text and must remain byte-for-byte unchanged.
-    old_array = array_match.group(0)
-    insertion = f'{TARGET_CONST.format(new=new_reg)}\n\n' + \
-                old_array.replace(f"v{old_last}}}", f"v{new_reg}}}")
-    replacement_body = (body[:array_match.start()] + insertion +
-                        body[array_match.end():])
-    if declared <= new_reg:
-        updated_allocation = re.search(
-            r"^\s*\.(locals|registers)\s+(\d+)\s*$",
-            replacement_body, re.MULTILINE)
-        if updated_allocation is None:
-            raise ValueError("Cannot update register allocation safely")
-        old_line = updated_allocation.group(0)
-        new_line = old_line.replace(updated_allocation.group(2),
-                                    str(new_reg + 1), 1)
-        replacement_body = (replacement_body[:updated_allocation.start()] +
-                            new_line + replacement_body[updated_allocation.end():])
-    revised = original[:start] + replacement_body + original[end:]
+    occupied = re.search(rf'\bv{new_reg}\b', body) is not None
+
+    if occupied:
+        # Fold6 already uses v(N+1); expanding a filled-new-array/range would
+        # overwrite a live register. Instead append to the freshly produced
+        # String[] using the existing move-result-object register. This does
+        # not change the initializer register count or any v1..vN values.
+        if HELPER_SIGNATURE in original:
+            raise ValueError("SettingsGateway helper name already exists")
+        tail = body[array_match.end():]
+        result = re.match(
+            r'(?:[ \t]*\n|[ \t]*#[^\n]*\n)+'
+            r'[ \t]*move-result-object[ \t]+(?P<reg>v\d+)\b',
+            tail
+        )
+        if result is None:
+            raise ValueError("Missing immediate array move-result-object; manual rebase required")
+        result_register = result.group("reg")
+        insert_at = array_match.end() + result.end()
+        hook = (
+            f"\n    invoke-static {{{result_register}}}, "
+            f"Lcom/android/settings/core/gateway/SettingsGateway;->{HELPER_SIGNATURE}"
+            f"\n    move-result-object {result_register}"
+        )
+        replacement_body = body[:insert_at] + hook + body[insert_at:]
+        revised = original[:start] + replacement_body + original[end:]
+        revised = revised.rstrip("\n") + "\n\n" + HELPER_SMALI + "\n"
+        strategy = "post_array_append"
+        declared_after = declared
+    else:
+        # Original b5q-style extension remains usable when the next
+        # contiguous register is genuinely unused in the Fold6 initializer.
+        old_array = array_match.group(0)
+        insertion = f'{TARGET_CONST.format(new=new_reg)}\n\n' + \
+                    old_array.replace(f"v{old_last}}}", f"v{new_reg}}}")
+        replacement_body = (
+            body[:array_match.start()] + insertion + body[array_match.end():]
+        )
+        declared_after = max(declared, new_reg + 1)
+        if declared <= new_reg:
+            updated_allocation = re.search(
+                r"^\s*\.(locals|registers)\s+(\d+)\s*$",
+                replacement_body, re.MULTILINE
+            )
+            if updated_allocation is None:
+                raise ValueError("Cannot update register allocation safely")
+            old_line = updated_allocation.group(0)
+            new_line = old_line.replace(
+                updated_allocation.group(2), str(declared_after), 1
+            )
+            replacement_body = (
+                replacement_body[:updated_allocation.start()] +
+                new_line + replacement_body[updated_allocation.end():]
+            )
+        revised = original[:start] + replacement_body + original[end:]
+        strategy = "extend_contiguous_range"
 
     unified = list(difflib.unified_diff(
         original.splitlines(keepends=True),
@@ -132,7 +180,8 @@ def rebase(patch_text: str, decoded: Path):
         "old_last_register": old_last,
         "new_last_register": new_reg,
         "registers_declared_before": declared,
-        "registers_declared_after": max(declared, new_reg + 1),
+        "registers_declared_after": declared_after,
+        "strategy": strategy,
     }
 
 
