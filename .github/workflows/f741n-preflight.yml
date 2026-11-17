@@ -59,5 +59,10 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_f741n_settings_adapter.py' -v
           test -f onigiri/mods/settings/smali/system/priv-app/SecSettings/SecSettings.apk/0001-Add-Onigiri-Settings.patch
           test -f onigiri/mods/settings/smali/system_ext/priv-app/SystemUI/SystemUI.apk/0001-Replace-the-no-SIM-carrier-text.patch
+          # The upstream smali hooks must precede SamsungPropsHooks:
+          test -f onigiri/mods/pif/smali/system/framework/framework.jar/0001-Introduce-PlayIntegrityHooks.patch
+          test -f onigiri/mods/pif/smali/system/framework/framework.jar/0002-Introduce-KeyStoreHooks.patch
+          test -f onigiri/mods/pif/smali/system/framework/services.jar/0001-Introduce-PlayIntegrityHooks.patch
+          grep -Fq 'apply_one_target "$prereq" "$PIF_SRC" pif' scripts/apply_b6q_settings.sh
           test -f target/b5q/patches/dex/smali/system/framework/services.jar/0001-Add-external-display-refresh-policy.patch
           test -f target/b6q/patches/dex/customize.sh
