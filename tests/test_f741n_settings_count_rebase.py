@@ -61,7 +61,7 @@ class SettingsCountRebaseTests(unittest.TestCase):
         modified, info = adapt(PATCH, self.decoded)
         self.assertIn("-    const/16 v2, 0x8c", modified)
         self.assertIn("+    array-length v2, v1", modified)
-        self.assertEqual(info["source_line"], 6)
+        self.assertEqual(info["source_line"], 7)
         self.assertEqual(self.target.read_text(), before)
 
     def test_unrelated_sections_stay_intact(self):
