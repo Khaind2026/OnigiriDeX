@@ -114,6 +114,19 @@ class GatewayRebaseTests(unittest.TestCase):
         self.assertEqual(adapted.count("-    filled-new-array/range {v1 .. v141}"), 1)
         self.assertEqual(adapted.count("+    filled-new-array/range {v1 .. v142}"), 1)
 
+    def test_last_register_initialized_before_samsung_anchor(self):
+        original = gateway_source(last=141)
+        original = original.replace(
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n'
+            '    const-string v141, "com.samsung.android.settings.KnoxFeature"\n',
+            '    const-string v141, "com.samsung.android.settings.KnoxFeature"\n'
+            '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n'
+        )
+        self.target.write_text(original)
+        updated, info = rebase(GATEWAY_PATCH, self.decoded)
+        self.assertEqual(info["old_last_register"], 141)
+        self.assertIn("+    filled-new-array/range {v1 .. v142}", updated)
+
     def test_refuses_ambiguous_duplicate_anchor(self):
         source = gateway_source(last=141).replace(
             '    const-string v136, "com.samsung.android.fast.ui.MainActivity"\n',
