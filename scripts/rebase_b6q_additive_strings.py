@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebase strictly additive Onigiri res/values/strings.xml hunks on Fold6.
 
-Only accepts string additions (no removals, replacements or other XML).
+Accepts only string additions or exact same-key string replacements.
 Recreates the single diff using the actual decoded SecSettings strings and
 inserts additions immediately before the unique settings-category title.
 Preserves every other original patch section unmodified. Fails closed.
@@ -31,8 +31,17 @@ def adapt(original_patch: str, decoded_root: Path):
                  if s.startswith("+") and not s.startswith("+++ ")]
     deletions = [s for s in section.splitlines()
                  if s.startswith("-") and not s.startswith("--- ")]
-    if deletions or not additions:
-        raise ValueError("Non-additive strings patch; manual rebase required")
+    if not additions:
+        raise ValueError("No new string content in patch")
+    replacements = {}
+    for removed in deletions:
+        match = TAG.fullmatch(removed[1:].rstrip("\r\n"))
+        if match is None:
+            raise ValueError("Non-string deletion; manual rebase required")
+        key = match.group(1)
+        if key in replacements:
+            raise ValueError("Duplicate replacement key")
+        replacements[key] = removed[1:]
     keys = []
     for item in additions:
         found = TAG.fullmatch(item.rstrip("\r\n"))
@@ -41,6 +50,9 @@ def adapt(original_patch: str, decoded_root: Path):
         keys.append(found.group(1))
     if len(set(keys)) != len(keys):
         raise ValueError("Duplicate resource keys in patch")
+    added_by_key = dict(zip(keys, additions))
+    if not set(replacements).issubset(added_by_key):
+        raise ValueError("Deleting a resource without a same-key replacement")
 
     path = decoded_root / STRINGS
     if path.is_symlink() or not path.is_file():
@@ -60,8 +72,14 @@ def adapt(original_patch: str, decoded_root: Path):
         match = TAG.fullmatch(line.rstrip("\r\n"))
         if match:
             names.setdefault(match.group(1), []).append(j)
-    if any(k in names for k in keys):
+    if any(k in names for k in keys if k not in replacements):
         raise ValueError("Some resource keys already present; partial patch possible")
+    for key, removed in replacements.items():
+        if len(names.get(key, [])) != 1:
+            raise ValueError(f"Replacement key is missing or ambiguous: {key}")
+        current = original_lines[names[key][0]].rstrip("\r\n")
+        if current != removed.rstrip("\r\n"):
+            raise ValueError(f"Resource old value differs from upstream patch: {key}")
     positions = names.get(CATEGORY, [])
     if len(positions) != 1:
         raise ValueError("Cannot uniquely locate settings category anchor")
@@ -70,9 +88,15 @@ def adapt(original_patch: str, decoded_root: Path):
     if sum(line.strip() == "</resources>" for line in original_lines) != 1:
         raise ValueError("Expected exactly one closing resources tag")
     at = positions[0]
+    modified_lines = original_lines.copy()
+    for key in replacements:
+        row = names[key][0]
+        ending = "\r\n" if original_lines[row].endswith("\r\n") else "\n"
+        modified_lines[row] = added_by_key[key].rstrip("\r\n") + ending
     newline = "\r\n" if original_lines[at].endswith("\r\n") else "\n"
-    added_lines = [line.rstrip("\r\n") + newline for line in additions]
-    new_lines = original_lines[:at] + added_lines + original_lines[at:]
+    added_lines = [line.rstrip("\r\n") + newline for key, line in zip(keys, additions)
+                   if key not in replacements]
+    new_lines = modified_lines[:at] + added_lines + modified_lines[at:]
     updated_resource = "".join(new_lines)
     try:
         ET.fromstring(updated_resource)
@@ -84,7 +108,8 @@ def adapt(original_patch: str, decoded_root: Path):
     if not diff:
         raise ValueError("Nothing to rebase")
     sections[index] = f"diff --git a/{STRINGS} b/{STRINGS}\n" + "".join(diff)
-    return "".join(sections), {"added_keys": keys, "insert_before": CATEGORY,
+    return "".join(sections), {"added_keys": [k for k in keys if k not in replacements],
+                               "replaced_keys": list(replacements), "insert_before": CATEGORY,
                                "other_sections_preserved": len(sections) - 2}
 
 
