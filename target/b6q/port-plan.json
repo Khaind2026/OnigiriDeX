@@ -1,0 +1,27 @@
+{
+  "status": "ANALYSIS_ONLY_NOT_FLASHABLE",
+  "rom_name": "DuyKhaiDeX",
+  "target": {"model": "SM-F741N", "device": "b6q", "csc": "SKC", "build": "F741NKSS2BYGB"},
+  "donor": {"model": "SM-F956N", "device": "q6q", "csc": "SKC", "build": "F956NKSS2BYGB"},
+  "system_partition_sources": {
+    "system": "SM-F956N",
+    "product": "SM-F956N",
+    "system_ext": "SM-F956N",
+    "vendor": "SM-F741N",
+    "odm": "SM-F741N",
+    "system_dlkm": "SM-F741N",
+    "vendor_dlkm": "SM-F741N"
+  },
+  "hardware_target_only": [
+    "boot", "init_boot", "vendor_boot", "dtbo", "recovery",
+    "vbmeta", "vbmeta_system", "modem", "bootloader", "persist"
+  ],
+  "requirements_before_flash": [
+    "Match actual physical SM-F741N bootloader revision and stock firmware",
+    "Rebase Samsung framework and DeX patches to F956N One UI 7 APK/JAR resources",
+    "Validate F741N kernel/vendor ABI, VINTF, SELinux and Android API level",
+    "Use real F741N super geometry and partitions; never reuse Fold6 super.img",
+    "Verify resulting Odin AP, partition hashes, recovery and safe restore path",
+    "Test on device only after independent build and validation"
+  ]
+}
