@@ -37,10 +37,10 @@ def plain(element, name):
 
 def parse_ver(string, kind):
     string = string.strip()
-    m = (HIDL_VER if kind == "hidl" else AIDL_VER).fullmatch(string)
+    m = (HIDL_VER if kind in ("hidl", "native") else AIDL_VER).fullmatch(string)
     if not m:
         return None
-    if kind == "hidl":
+    if kind in ("hidl", "native"):
         return (int(m.group(1)), int(m.group(2)),
                 int(m.group(3)) if m.group(3) else int(m.group(2)))
     return (0, int(m.group(1)), int(m.group(2)) if m.group(2) else int(m.group(1)))
@@ -49,19 +49,31 @@ def parse_ver(string, kind):
 def specs(hal):
     """Extract interface-level tuples; supports new-style FQ names as well."""
     kinds = hal.get("format", "hidl").lower()
-    if kinds not in ("hidl", "aidl"):
+    if kinds not in ("hidl", "aidl", "native"):
         return [], True
     names = plain(hal, "name")
     if len(names) != 1 or not names[0]:
         return [], True
     versions = [parse_ver(v, kinds) for v in plain(hal, "version")]
     uncertain = any(v is None for v in versions)
-    if not versions:
-        # A HIDL FQNAME contains a version, but old-style <interface>
-        # without <version> does not. Distinguish these two layouts.
-        if children(hal, "interface") or not plain(hal, "fqname"):
+    if kinds == "native":
+        # Native HALs such as EGL/GLES have name + version, but do not
+        # expose binder interface/instance. Treat them as version contracts
+        # rather than unsupported HIDL HALs. A versionless native entry
+        # remains unknown, never an automatic compatibility PASS.
+        if not versions or children(hal, "interface") or plain(hal, "fqname"):
             uncertain = True
-        versions = [None]
+        return [(names[0], "native", v, "", "")
+                for v in versions if v is not None], uncertain
+    if not versions:
+        if kinds == "aidl":
+            # AOSP VINTF manifest: absent AIDL version defaults to 1.
+            versions = [(0, 1, 1)]
+        else:
+            # HIDL FQNAME embeds its version; an old-style interface does not.
+            if children(hal, "interface") or not plain(hal, "fqname"):
+                uncertain = True
+            versions = [None]
     requirements = []
     for interface in children(hal, "interface"):
         interfaces = plain(interface, "name")
@@ -95,8 +107,6 @@ def specs(hal):
                 uncertain = True
                 continue
             iface, instance = matched.group(1), matched.group(2)
-            if not versions or versions == [None]:
-                uncertain = True
             ver = versions[0] if versions else None
         requirements.append((names[0], kinds, ver, iface, instance))
     if not requirements:
@@ -112,16 +122,28 @@ def unexplained_hal_reasons(hal):
     """
     reasons = set()
     kind = hal.get("format", "hidl").lower()
-    if kind not in ("hidl", "aidl"):
+    if kind not in ("hidl", "aidl", "native"):
         return ["UNSUPPORTED_HAL_FORMAT"]
     names = plain(hal, "name")
     if len(names) != 1 or not names[0]:
         reasons.add("MISSING_OR_DUPLICATE_HAL_NAME")
     versions = plain(hal, "version")
+    fqnames = plain(hal, "fqname")
     if not versions:
-        reasons.add("VERSION_NOT_EXPLICIT")
+        if kind == "hidl":
+            # Explicit @MAJOR.MINOR::IFace/instance already contains version.
+            if children(hal, "interface") or not fqnames or not all(
+                    FQ_HIDL.fullmatch(fq) for fq in fqnames):
+                reasons.add("VERSION_NOT_EXPLICIT")
+        elif kind == "native":
+            reasons.add("NATIVE_VERSION_NOT_EXPLICIT")
+        # No AIDL <version> is valid and defaults to version 1.
     elif any(parse_ver(v, kind) is None for v in versions):
         reasons.add("UNSUPPORTED_VERSION_SYNTAX")
+    if kind == "native":
+        if children(hal, "interface") or fqnames:
+            reasons.add("UNMODELED_NATIVE_INTERFACE_LAYOUT")
+        return sorted(reasons) if reasons else ["UNMODELED_NATIVE_RULE"]
     for iface in children(hal, "interface"):
         if len(plain(iface, "name")) != 1:
             reasons.add("MISSING_OR_DUPLICATE_INTERFACE_NAME")
@@ -143,7 +165,7 @@ def compatible_version(required, offered, kind):
     """Return True, False or None when matching semantics cannot be asserted."""
     if required is None or offered is None:
         return None
-    if kind == "hidl":
+    if kind in ("hidl", "native"):
         if required[0] != offered[0]:
             return False
         # A provided HIDL minor version supports lower minor revisions.
