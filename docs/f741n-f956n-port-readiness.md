@@ -257,3 +257,35 @@ cd ~/OnigiriDeX && git pull --ff-only && python3 scripts/diagnose_b6q_all.py
 It includes all previous source checks, plus SELinux mapping,
 release-gate status and optional privacy-safe ADB properties. Upload only
 the diagnostic ZIP; never include firmware partitions or signing keys.
+
+
+## 2026-11-18 — first actual mixed CIL compiler gate
+
+The latest one-shot ZIP (`DuyKhaiDeX_F741N_F956N_ALL_20261118_094510_844899.zip`)
+contains **usable host SELinux compilation inputs**:
+
+- F741N vendor `plat_sepolicy_vers.txt` is **34.0**.
+- F956N system provides `system/etc/selinux/mapping/34.0.cil`.
+- `secilc` exists on the host; `checkvintf` does not.
+- `odm_sepolicy.cil` is absent, but Android init treats it as optional.
+- F741N's ADB boot-state test saw zero authorized phones, so unlocked and
+  antirollback status remain unknown.
+- Stock BL AVB still directly authenticates the modified system partitions.
+
+Added `scripts/compile_b6q_selinux.py`: it follows Android 15 init's
+split CIL input order with F956N platform and F741N vendor fragments,
+including required `vendor/plat_pub_versioned.cil`. It invokes available
+host `secilc` in a temporary directory using policy version 30, with
+two separate passes: init-equivalent `-N` (neverallow not checked) and a
+strict pass without `-N`. Outcomes are separately recorded. The
+compiled temporary policy is deleted and never installed on the device
+or inserted into firmware.
+
+Any successful host compilation is **not** proof of working SELinux
+runtime/boot, VINTF/ABI correctness, AVB acceptance or flashability.
+The release gate remains blocked until those checks and physical restore
+are independently verified.
+
+AOSP references:
+- https://android.googlesource.com/platform/system/core/+/refs/heads/android15-automotiveos-release/init/selinux.cpp
+- https://android.googlesource.com/platform/system/sepolicy/+/refs/heads/android15-qpr2-release/Android.bp
