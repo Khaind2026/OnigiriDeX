@@ -100,3 +100,32 @@ bootloader, modem, kernel, dtbo, vendor or vbmeta on F741N.
 The uploaded diagnostic showed local changes in
 `external/kernel` and `external/erofs-utils`. Do **not** reset/clean these
 submodules as a routine part of the port; preserve the existing work tree.
+
+
+## 2026-11-18 — boot format and first-stage mount gate added
+
+The preflight now includes `scripts/audit_b6q_boot_mount_gate.py`, wired into
+`scripts/diagnose_b6q_all.py` (one-command ZIP collection). This read-only
+gate:
+- checks staged stock F741N `boot.img` and `init_boot.img` v3/v4 headers;
+- parses the F741N `vendor_boot.img` v3/v4 header, vendor ramdisk table
+  fragment offsets, sizes, types, and names without extracting ramdisk content;
+- compares stock F741N vendor/odm `fstab.*` rules for all seven planned
+  dynamic mount points with `logical`, `first_stage_mount`, and `avb`;
+- displays stock BL AVB descriptor overlap with changed F956N system partitions.
+
+All outputs remain `flashable=false` and `bootable=false`, including if the
+fstab structure is consistent. This is **not** a full first-stage ramdisk,
+kernel DTB or AVB signature validation. Inspecting these structures is
+only an evidence-gathering gate and does not authorize Odin flashing.
+
+On the user's Debian host, refresh the branch and regenerate the ONE-ZIP
+diagnostic bundle:
+
+```bash
+cd ~/OnigiriDeX && git pull --ff-only && python3 scripts/diagnose_b6q_all.py
+```
+
+Only share the resulting ZIP under `out/b6q/diagnostics`. Do not attach
+stock Odin firmware images, partition images, certificates, or any private
+cryptographic keys.
