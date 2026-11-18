@@ -77,6 +77,28 @@ def first_api_level(vendor_dir):
     return values
 
 
+def find_host_checkvintf(work):
+    """Prefer a real AOSP host binary already built in the user's workspace."""
+    binary = shutil.which("checkvintf")
+    if binary:
+        return binary
+    repo = work.resolve().parents[3] if len(work.resolve().parents) >= 4 else None
+    if repo is None:
+        return None
+    # Worktree is <repo>/out/target/b6q/SM-F741N/work_dir.
+    if repo.name != "out":
+        return None
+    root = repo.parent
+    for candidate in (
+        root / "out/tools/bin/checkvintf",
+        root / "out/host/linux-x86/bin/checkvintf",
+        root / "out/host/linux-x86/bin/check_vintf",
+    ):
+        if candidate.is_file() and not candidate.is_symlink():
+            return str(candidate)
+    return None
+
+
 def run_check(work, tool=None):
     checked_work_tree(work)
     report = {
@@ -102,7 +124,7 @@ def run_check(work, tool=None):
 
     report["dirmap"] = {"/" + k: str(v) for k, v in dirs.items()}
     report["properties"] = props
-    binary = tool or shutil.which("checkvintf")
+    binary = tool or find_host_checkvintf(work)
     if not binary:
         report["status"] = "NOT_RUN_CHECKVINTF_MISSING"
         report["reason"] = "Install/build official AOSP host checkvintf first"
