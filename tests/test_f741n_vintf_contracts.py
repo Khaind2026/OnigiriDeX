@@ -95,14 +95,23 @@ class VintfContractTests(unittest.TestCase):
         self.assertIn("source_file", result["unsupported_xml"][0])
         self.assertFalse(result["libvintf_equivalence"])
 
-    def test_versionless_fqname_is_explained_without_false_pass(self):
+    def test_hidl_fqname_explicit_version_not_falsely_unmodeled(self):
+        result = inspect(self.work)
+        self.assertTrue(result["required_fully_matched"])
+        self.assertNotIn("VERSION_NOT_EXPLICIT", result["unsupported_reason_counts"])
+
+    def test_versionless_interface_xml_explained_without_false_pass(self):
         p = self.work / "system/system/etc/vintf/manifest.xml"
-        p.write_text(FRAMEWORK.replace("<fqname>@1.1::IMemory/default</fqname>",
-            "<fqname>@1.1::IMemory/default</fqname>"))
+        p.write_text(
+            '<manifest version="1.0" type="framework">'
+            '<hal format="hidl"><name>android.hidl.memory</name>'
+            '<interface><name>IMemory</name><instance>default</instance>'
+            '</interface></hal></manifest>'
+        )
         result = inspect(self.work)
         self.assertIn("VERSION_NOT_EXPLICIT", result["unsupported_reason_counts"])
-        self.assertTrue(result["required_fully_matched"])
-        self.assertNotEqual(result["status"], "HAL_CONTRACTS_MATCH_PARTIAL_NOT_LIBVINTF")
+        self.assertFalse(result["required_fully_matched"])
+        self.assertEqual(result["status"], "INCOMPLETE_XML_HAL_CONTRACT_AUDIT")
 
     def test_xml_parse_error_has_reason_code(self):
         p = self.work / "system/system/etc/vintf/manifest.xml"
