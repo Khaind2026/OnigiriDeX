@@ -250,9 +250,9 @@ def main(argv=None):
     try:
         report = inspect_stock_ramdisks(args.stock)
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n")
+        args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     except (OSError, ValueError) as error:
-        parser.exit(1, "Stock F741N ramdisk analysis failed: " + str(error) + "\\n")
+        parser.exit(1, "Stock F741N ramdisk analysis failed: " + str(error) + "\n")
     for rec in report["ramdisks"]:
         print(rec["source"], rec["status"], rec.get("compression", "UNKNOWN"))
         if rec.get("status") == "CPIO_INSPECTED":
