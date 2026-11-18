@@ -20,17 +20,19 @@ STAGED="$OUT_DIR/b6q/extracted"
 DEVICE_OUTPUT="$OUT_DIR/target/b6q/SM-F741N"
 MODE="${1:-all}"
 case "$MODE" in
-    all|prepare|apply) ;;
+    all|prepare|apply|source-kit) ;;
     -h|--help)
         cat <<'USAGE'
-Usage: bash scripts/port_b6q.sh [all|prepare|apply]
+Usage: bash scripts/port_b6q.sh [all|prepare|apply|source-kit]
   prepare   Reuse F956N system/product/system_ext and F741N
             vendor/odm/system_dlkm/vendor_dlkm; extract EROFS content
             to an isolated b6q work directory (no phone access).
   apply     Replay the original Flip5 DeX smali patch files using
             scripts/internal/apply_modules.sh on F956N content;
             fail visibly when a Fold5-specific hunk differs.
-  all       Run prepare then apply (default).
+  source-kit Stage the REAL Flip5 DeX/kernel/root source templates to
+            a separate b6q port kit, with verified hashes; no phone access.
+  all       Run prepare, apply, then stage the Flip5 source kit (default).
 
 This is the direct OnigiriDeX ROM port pipeline, NOT an Odin AP builder.
 Never flash output under out/target/b6q.
@@ -177,5 +179,6 @@ apply_port()
 case "$MODE" in
     prepare) prepare ;;
     apply) apply_port ;;
-    all) prepare && apply_port ;;
+    source-kit) python3 "$SRC_DIR/scripts/stage_b6q_flip5_source_kit.py" ;;
+    all) prepare && apply_port && python3 "$SRC_DIR/scripts/stage_b6q_flip5_source_kit.py" ;;
 esac
