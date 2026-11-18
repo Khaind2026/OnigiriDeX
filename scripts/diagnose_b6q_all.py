@@ -3,7 +3,8 @@
 
 Inspects staged firmware/AVB/VINTF/DeX evidence on the local build host.
 Produces one small ZIP with diagnostics, not firmware. Does not patch, sign,
-repack, build Odin packages, or communicate with a phone.
+repack or build Odin packages. Optionally reads only safe ADB getprop values
+from exactly one already authorized SM-F741N; never modifies the phone.
 """
 import argparse
 import datetime
@@ -30,9 +31,11 @@ REPORT_PATHS = (
     "out/b6q/analysis/f741n-boot-mount-avb-precheck.json",
     "out/b6q/analysis/f741n-stock-ramdisk-content.json",
     "out/b6q/analysis/f741n-f956n-selinux-triage.json",
+    "out/b6q/analysis/f741n-adb-bootloader-status.json",
 )
 TOOL_NAMES = ("python3", "git", "lz4", "avbtool", "dump.erofs",
-              "extract.erofs", "apktool", "lpmake", "lpunpack", "checkvintf")
+              "extract.erofs", "apktool", "lpmake", "lpunpack", "checkvintf",
+              "secilc", "adb")
 IMAGE_ORIGINS = {
     "SM-F956N": ("system", "product", "system_ext"),
     "SM-F741N": ("vendor", "odm", "system_dlkm", "vendor_dlkm"),
@@ -280,6 +283,12 @@ def scan(root: Path):
         sections["existing_reports"] = issue("existing_reports", error)
 
     try:
+        from inspect_b6q_device_bootstate import inspect as inspect_adb_bootstate
+        sections["adb_device_bootstate"] = inspect_adb_bootstate()
+    except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
+        sections["adb_device_bootstate"] = issue("adb_device_bootstate", error)
+
+    try:
         from b6q_release_gate import evaluate as evaluate_release
         sections["rom_release_gate"] = evaluate_release(sections)
     except (ValueError, KeyError, TypeError, ImportError) as error:
@@ -326,6 +335,9 @@ def summary_text(report):
         ),
         "ROM release gate: " + str(
             sections.get("rom_release_gate", {}).get("status", "UNKNOWN")
+        ),
+        "Optional F741N ADB boot state: " + str(
+            sections.get("adb_device_bootstate", {}).get("status", "UNKNOWN")
         ),
         "Boot: " + str(sections["boot_chain"].get("result", "UNKNOWN")),
         "Image stage: " + str(sections["stock_stage_validation"].get("result", "UNKNOWN")),
