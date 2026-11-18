@@ -232,11 +232,42 @@ def build(repo, output_dir, *, auto_build=True, lz4="lz4"):
     return manifest
 
 
+def publish_sanitized_ap_status(result):
+    """Optional GitHub comment. Never uploads firmware, full logs or local paths."""
+    gh = shutil.which("gh")
+    if not gh:
+        raise ValueError("gh CLI unavailable for opt-in public status")
+    artifact = result["archive"]
+    body = ("<!-- DUYKHAIDEX_F741N_AP_BUILD -->\n"
+            "### DuyKhaiDeX F741N — local Odin AP packaging\n\n"
+            "| Field | Result |\n| --- | --- |\n"
+            "| Packaging | ENGINEERING_ODIN_TAR_MD5_CREATED |\n"
+            "| Model | SM-F741N |\n"
+            "| AP size (bytes) | " + str(int(artifact["bytes"])) + " |\n"
+            "| SHA-256 | `" + artifact["sha256"] + "` |\n"
+            "| Boot | STOCK_F741N_NOT_KERNELSU |\n"
+            "| AVB | ROOT_SIGNED_HASHTREE_OVERLAP_UNRESOLVED |\n"
+            "| Boot/device verified | NO |\n"
+            "| Safe to flash | **NO** |\n\n"
+            "This comment contains only build metadata. The actual proprietary "
+            "Samsung firmware/AP file remains on the user's own Debian host.\n")
+    completed = subprocess.run(
+        [gh, "pr", "comment", "9", "--repo", "Khaind2026/OnigiriDeX",
+         "--body-file", "-"],
+        input=body, text=True, capture_output=True, timeout=60, check=False,
+    )
+    if completed.returncode:
+        raise ValueError("AP was built, but GitHub status could not be published")
+    return completed.stdout.strip()
+
+
 def main(argv=None):
     repo = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build", action="store_true",
                         help="Actually produce one NOT-FOR-FLASH engineering AP from local inputs")
+    parser.add_argument("--publish-public", action="store_true",
+                        help="Opt in to post AP package metadata, NOT the file, to GitHub PR #9")
     parser.add_argument("--no-auto-build", action="store_true",
                         help="Do not stage F741N boot or construct super automatically")
     parser.add_argument("--output-dir", type=Path, default=repo / "out/b6q/build",
@@ -252,6 +283,12 @@ def main(argv=None):
             tarfile.TarError, json.JSONDecodeError) as exc:
         parser.exit(1, "F741N engineering AP build failed: " + str(exc) + "\n")
     print("ENGINEERING AP CREATED:", args.output_dir / ARCHIVE_NAME)
+    if args.publish_public:
+        try:
+            published = publish_sanitized_ap_status(result)
+            print("SANITIZED AP STATUS PUBLISHED:", published)
+        except (ValueError, OSError, subprocess.TimeoutExpired) as error:
+            print("AP CREATED, but status publication failed:", error, file=sys.stderr)
     print("Checksum:", result["archive"]["sha256"])
     print("STOCK F741N BOOT ONLY. NO KERNELSU BUILD. AVB UNVERIFIED.")
     print("THIS ODIN ARCHIVE IS NOT FLASH SAFE. DO NOT FLASH.")
