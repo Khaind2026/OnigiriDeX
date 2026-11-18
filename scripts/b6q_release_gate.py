@@ -82,6 +82,9 @@ def evaluate(sections):
             "matched": contracts.get("matched_entries"),
             "required": contracts.get("required_entries"),
             "possible_mismatch_count": len(contracts.get("possible_mismatches") or []),
+            "unmodeled_xml_reason_counts": (
+                contracts.get("unsupported_reason_counts") or {}
+            ),
         },
         "Confirm any version/interface/instance mismatches with official libvintf; include FCM, SKU, APEX and kernel",
     )
@@ -103,7 +106,32 @@ def evaluate(sections):
         "Resolve actual secilc failures, verify policy and mapping with AOSP init semantics, and validate combined policy on SM-F741N",
     )
 
-    impacted = avb.get("modified_partition_overlap") or []
+    trust = sections.get("avb_trust_graph") or {}
+    if not isinstance(trust, dict):
+        trust = {}
+    trust_state = trust.get("status", "NOT_RUN_AVB_GRAPH")
+    graph_overlap = (trust.get("trust_graph") or {}).get(
+        "modified_partition_signed_descriptor_overlap", []
+    )
+    neverallow = sections.get("neverallow_rule_triage") or (
+        compile_report.get("neverallow_rule_triage") or {}
+    )
+    if not isinstance(neverallow, dict):
+        neverallow = {}
+    gates["strict_neverallow_evidence"] = gate(
+        "BLOCKED_NEVERALLOW_VIOLATION_ANALYSIS_PENDING"
+        if neverallow.get("strict_compiler_status") == "FAILED"
+        else "PASS_HOST_ONLY_NOT_RUNTIME_VERIFIED"
+        if neverallow.get("strict_compiler_status") == "COMPILED"
+        else "BLOCKED_UNKNOWN",
+        {
+            "status": neverallow.get("status", "NOT_RUN"),
+            "suspected_violation_lines": neverallow.get("suspected_violation_lines", 0),
+        },
+        "Review original conflicting allow/neverallow CIL rules locally, never remove security policy checks as a shortcut",
+    )
+
+    impacted = avb.get("modified_partition_overlap") or graph_overlap
     if impacted:
         avb_state = "BLOCKED_STOCK_SIGNED_HASHTREES_OVERLAP_MODIFIED_PARTITIONS"
     else:
@@ -111,7 +139,9 @@ def evaluate(sections):
     gates["avb_trust_chain"] = gate(
         avb_state,
         {"signed_stock_root_hashtree_overlap": impacted,
-         "engineering_preview_no_avb": True},
+         "engineering_preview_no_avb": True,
+         "stock_bl_trust_graph_status": trust_state,
+         "cryptographic_verification": False},
         "Establish legitimate device-specific unlocked-bootloader/AVB policy and verify built partition digests and rollback behavior; stock Samsung signatures cannot be assumed to authenticate rebuilt data",
     )
 
