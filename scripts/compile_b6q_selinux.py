@@ -188,6 +188,10 @@ def compile_policy(work, compiler=None, timeout=120):
         "HOST_SELINUX_COMPILE_FAILED" if init_status == "FAILED" else
         "HOST_SELINUX_COMPILE_ERROR"
     )
+    # Analyze the strict compiler's existing stderr in memory. Raw line
+    # excerpts remain LOCAL in this report; GitHub PR status gets counts only.
+    from triage_b6q_neverallow import analyze as triage_neverallow
+    result["neverallow_rule_triage"] = triage_neverallow(result)
     result["neverallow_check"] = (
         "PASSED_HOST_ONLY" if strict_status == "COMPILED" else
         "FAILED_HOST_ONLY" if strict_status == "FAILED" else
