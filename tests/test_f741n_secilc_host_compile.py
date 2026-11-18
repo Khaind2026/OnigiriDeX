@@ -8,7 +8,7 @@ import unittest
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from compile_b6q_selinux import policy_inputs, compile_policy
+from compile_b6q_selinux import policy_inputs, compile_policy, classify_strict_failure
 
 
 class SeLinuxCompileTests(unittest.TestCase):
@@ -64,6 +64,41 @@ class SeLinuxCompileTests(unittest.TestCase):
         self.assertIn("30", args1)
         self.assertFalse(r["bootable"])
         self.assertFalse(r["flashable"])
+
+    @mock.patch("compile_b6q_selinux.subprocess.run")
+    def test_init_pass_but_strict_neverallow_failure_is_classified(self, execute):
+        execute.side_effect = [
+            subprocess.CompletedProcess([], 0, "", ""),
+            subprocess.CompletedProcess([], 1, "",
+                                        "libsepol: neverallow check failed"),
+        ]
+        r = compile_policy(self.root, compiler="/mock/secilc")
+        self.assertEqual(r["status"], "HOST_SELINUX_COMPILE_PASSED_RUNTIME_UNVERIFIED")
+        self.assertEqual(r["strict_pass_status"], "FAILED")
+        self.assertEqual(r["neverallow_check"], "FAILED_HOST_ONLY")
+        self.assertEqual(r["strict_failure_category"], "NEVERALLOW_VIOLATION_DETECTED")
+        self.assertFalse(r["flashable"])
+
+    def test_strict_error_categories_do_not_emit_raw_compiler_log(self):
+        self.assertEqual(
+            classify_strict_failure({
+                "status": "FAILED",
+                "stderr_tail": "/home/private/abc.cil: unknown type secretname",
+            }), "UNRESOLVED_POLICY_SYMBOL",
+        )
+        self.assertEqual(
+            classify_strict_failure({
+                "status": "FAILED", "stderr_tail": "syntax error near line 42",
+            }), "CIL_SYNTAX_ERROR",
+        )
+        self.assertEqual(
+            classify_strict_failure({
+                "status": "FAILED", "stderr_tail": "/home/private/policy: error",
+            }), "OTHER_STRICT_COMPILATION_FAILURE",
+        )
+        self.assertEqual(classify_strict_failure({
+            "status": "ERROR", "reason": "TimeoutExpired",
+        }), "COMPILER_TIMEOUT")
 
     @mock.patch("compile_b6q_selinux.subprocess.run")
     def test_compile_failure_remains_blocker(self, execute):
