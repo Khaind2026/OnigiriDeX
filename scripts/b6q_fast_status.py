@@ -41,6 +41,7 @@ def collect(work=WORK):
     from audit_b6q_selinux_inputs import inspect
     from compile_b6q_selinux import compile_policy
     from run_b6q_checkvintf import run_check
+    from audit_b6q_vintf_contracts import inspect as inspect_hal_contracts
 
     data = {}
     try:
@@ -75,6 +76,17 @@ def collect(work=WORK):
     except (OSError, ValueError, TypeError, KeyError, ImportError):
         data["checkvintf"] = "NOT_RUN_INCOMPLETE_INPUT"
         data["checkvintf_errors"] = ""
+    try:
+        contract = inspect_hal_contracts(work)
+        data["hal_contracts"] = safe_status(contract.get("status"))
+        data["hal_required"] = int(contract.get("required_entries", 0))
+        data["hal_matched"] = int(contract.get("matched_entries", 0))
+        data["hal_candidates"] = len(contract.get("possible_mismatches", []))
+    except (OSError, ValueError, KeyError, TypeError, ImportError):
+        data["hal_contracts"] = "NOT_RUN_INCOMPLETE_INPUT"
+        data["hal_required"] = 0
+        data["hal_matched"] = 0
+        data["hal_candidates"] = 0
     return data
 
 
@@ -96,6 +108,13 @@ def markdown_report(result, include_errors=False):
         "| Strict failure category (no raw errors) | " +
             safe_status(result.get("strict_failure_category")) + " |",
         "| AOSP host checkvintf | " + safe_status(result.get("checkvintf")) + " |",
+        "| F741N required HAL contracts (partial XML audit) | " +
+            safe_status(result.get("hal_contracts")) + " |",
+        "| HAL contract entries matched | " +
+            str(int(result.get("hal_matched", 0))) + "/" +
+            str(int(result.get("hal_required", 0))) + " |",
+        "| HAL mismatch candidates | " +
+            str(int(result.get("hal_candidates", 0))) + " |",
         "| Rebuilt system verified boot | BLOCKED_UNVERIFIED |",
         "| Odin AP authorized | NO |",
         "",

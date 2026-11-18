@@ -20,6 +20,10 @@ def statuses():
         "strict_phase": "FAILED",
         "strict_failure_category": "NEVERALLOW_VIOLATION_DETECTED",
         "checkvintf": "NOT_RUN_CHECKVINTF_MISSING",
+        "hal_contracts": "POSSIBLE_F741N_F956N_HAL_CONTRACT_MISMATCH",
+        "hal_required": 5,
+        "hal_matched": 4,
+        "hal_candidates": 1,
         "secilc_errors": "/home/myname/secret_project/hello.cil: invalid CIL type\n",
         "checkvintf_errors": "",
     }
@@ -46,6 +50,9 @@ class FastStatusTests(unittest.TestCase):
         self.assertIn("BLOCKED_UNVERIFIED", report)
         self.assertIn("Strict failure category", report)
         self.assertIn("NEVERALLOW_VIOLATION_DETECTED", report)
+        self.assertIn("POSSIBLE_F741N_F956N_HAL_CONTRACT_MISMATCH", report)
+        self.assertIn("4/5", report)
+        self.assertIn("HAL mismatch candidates", report)
         self.assertNotIn("myname", report)
         self.assertNotIn("secret_project", report)
         self.assertNotIn("invalid CIL type", report)

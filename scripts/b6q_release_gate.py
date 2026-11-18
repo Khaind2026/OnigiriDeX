@@ -66,6 +66,25 @@ def evaluate(sections):
         host.get("status", "No official checkvintf run"),
         "Provide/build official host checkvintf and check full FCM/SKU/APEX/kernel data",
     )
+    # A targeted HAL contract scan supplies partial evidence even without
+    # AOSP checkvintf. It cannot supersede a full VINTF check and does not
+    # authorize the Odin AP under any circumstances.
+    contracts = sections.get("hal_contracts", {})
+    if not isinstance(contracts, dict):
+        contracts = {}
+    contract_state = contracts.get("status", "NOT_RUN")
+    gates["required_hal_contracts"] = gate(
+        "PASS_OFFLINE_PARTIAL_NOT_LIBVINTF"
+        if contract_state == "HAL_CONTRACTS_MATCH_PARTIAL_NOT_LIBVINTF"
+        else "BLOCKED_REQUIRED_HAL_CONTRACTS_UNVERIFIED",
+        {
+            "status": contract_state,
+            "matched": contracts.get("matched_entries"),
+            "required": contracts.get("required_entries"),
+            "possible_mismatch_count": len(contracts.get("possible_mismatches") or []),
+        },
+        "Confirm any version/interface/instance mismatches with official libvintf; include FCM, SKU, APEX and kernel",
+    )
     se_state = selinux.get("status", "NO_SELINUX_INSPECTION")
     compile_report = sections.get("selinux_host_compile", {})
     if not isinstance(compile_report, dict):

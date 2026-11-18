@@ -289,3 +289,35 @@ are independently verified.
 AOSP references:
 - https://android.googlesource.com/platform/system/core/+/refs/heads/android15-automotiveos-release/init/selinux.cpp
 - https://android.googlesource.com/platform/system/sepolicy/+/refs/heads/android15-qpr2-release/Android.bp
+
+
+## 2026-11-18 — required device HAL contract audit (PR #12)
+
+The F741N vendor **device** compatibility matrix has five mandatory HAL
+package names which were located in F956N framework manifests. Presence by
+name alone did not verify versions, interface identifiers, or instances.
+
+`scripts/audit_b6q_vintf_contracts.py` now checks those details from the
+prepared partition trees, without exporting Samsung firmware XML to GitHub.
+It distinguishes:
+
+- matched explicit interface/instance and supported version requirements;
+- candidate missing package/interface/instance or version;
+- XML/HAL layouts requiring full libvintf semantics (reported UNKNOWN).
+
+The fast sanitized GitHub status report includes only status and counts. No
+raw XML, serial numbers, proprietary firmware or paths are published.
+
+The AOSP `checkvintf` CLI has distinct exit meanings:
+`EX_OK=0` with COMPATIBLE, `EX_DATAERR=65` with INCOMPATIBLE, and
+`EX_SOFTWARE=70` or `EX_USAGE=64` for a failed tool invocation. The
+project runner now refuses to call an execution error a confirmed ROM
+incompatibility, and requires the literal AOSP verdict for a host PASS.
+
+A full libvintf compatibility pass with framework matrix selection,
+device SKU, kernel configuration, APEX fragments and runtime HALs **has not
+been obtained**. This audit is a stopgap, *not a substitute* for that check.
+AVB for rebuilt system/product/system_ext remains separately blocked and
+no Odin AP is approved.
+
+Source: https://android.googlesource.com/platform/system/libvintf/+/main/check_vintf.cpp

@@ -146,10 +146,18 @@ def run_check(work, tool=None):
     report["returncode"] = completed.returncode
     report["stdout"] = completed.stdout[-14000:]
     report["stderr"] = completed.stderr[-14000:]
-    report["status"] = (
-        "HOST_VINTF_CHECK_PASSED_RUNTIME_UNVERIFIED"
-        if completed.returncode == 0 else "HOST_VINTF_CHECK_FAILED"
-    )
+    # AOSP checkvintf: EX_OK (0) + COMPATIBLE is a success;
+    # EX_DATAERR (65) + INCOMPATIBLE is a metadata mismatch;
+    # EX_SOFTWARE (70) / EX_USAGE (64) are tool/input errors, not proven
+    # incompatibility. Never classify a silent zero-exit stub as a PASS.
+    stdout_lines = {line.strip() for line in completed.stdout.splitlines()}
+    if completed.returncode == 0 and "COMPATIBLE" in stdout_lines:
+        report["status"] = "HOST_VINTF_CHECK_PASSED_RUNTIME_UNVERIFIED"
+    elif completed.returncode == 65 and "INCOMPATIBLE" in stdout_lines:
+        report["status"] = "HOST_VINTF_CHECK_FAILED"
+    else:
+        report["status"] = "HOST_VINTF_CHECK_TOOL_ERROR"
+        report["reason"] = "checkvintf did not return an authoritative AOSP compatibility verdict"
     return report
 
 
