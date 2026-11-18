@@ -88,7 +88,7 @@ def parse_cpio(raw):
     offset = 0
     count = 0
     while offset < len(raw):
-        if raw[offset:] and not raw[offset:].strip(b"\\x00"):
+        if raw[offset:] and not raw[offset:].strip(b"\x00"):
             break
         if len(raw) - offset < 110:
             raise ValueError("Truncated CPIO header")
@@ -109,12 +109,12 @@ def parse_cpio(raw):
         if end > len(raw):
             raise ValueError("Truncated CPIO file content")
         name_bytes = raw[name_at:name_at + name_length]
-        if name_bytes[-1:] != b"\\x00":
+        if name_bytes[-1:] != b"\x00":
             raise ValueError("Missing CPIO filename terminator")
         name = name_bytes[:-1].decode("utf-8", "replace")
         if name == "TRAILER!!!":
             offset = align(end, 4)
-            if offset >= len(raw) or not raw[offset:].strip(b"\\x00"):
+            if offset >= len(raw) or not raw[offset:].strip(b"\x00"):
                 break
             continue
         count += 1
