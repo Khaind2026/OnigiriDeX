@@ -168,17 +168,25 @@ def analyze(root: Path):
         probes[partition] = inspected
         entries[partition] = [parse_vintf(f, root) for f in sorted(files)]
     framework = set()
+    framework_manifest = set()
+    device_matrix_required = set()
     vendor = set()
     framework_files = []
     for part, data in entries.items():
         for record in data:
             if not record.get("parsed"):
                 continue
-            if part in ("system", "system_ext", "product") and record["kind"] == "compatibility-matrix":
-                framework.update(record["required_hal_names"])
-                framework_files.append(record["file"])
-            if part in ("vendor", "odm") and record["kind"] == "manifest":
-                vendor.update(record["required_hal_names"])
+            if part in ("system", "system_ext", "product"):
+                if record["kind"] == "compatibility-matrix":
+                    framework.update(record["required_hal_names"])
+                    framework_files.append(record["file"])
+                elif record["kind"] == "manifest":
+                    framework_manifest.update(record["required_hal_names"])
+            if part in ("vendor", "odm"):
+                if record["kind"] == "manifest":
+                    vendor.update(record["required_hal_names"])
+                elif record["kind"] == "compatibility-matrix":
+                    device_matrix_required.update(record["required_hal_names"])
     # This is a broad list of candidate mismatches, NOT a checkvintf result:
     # multiple FCM levels, optional requirements, SKU and APEX fragments apply.
     matrix_records = [
@@ -197,6 +205,19 @@ def analyze(root: Path):
     # Empty difference when the framework requirement set is empty conveys
     # nothing. Emit null rather than the misleading integer zero.
     candidates = sorted(framework - vendor) if framework else None
+    device_matrix_files = [
+        r["file"] for part in ("vendor", "odm") for r in entries[part]
+        if r.get("parsed") and r.get("kind") == "compatibility-matrix"
+    ]
+    missing_device_matrix_names = (
+        sorted(device_matrix_required - framework_manifest)
+        if device_matrix_files else None
+    )
+    device_matrix_status = (
+        "UNKNOWN_DEVICE_MATRIX_NOT_FOUND" if not device_matrix_files else
+        "NAME_LEVEL_MISSING_REQUIREMENTS" if missing_device_matrix_names else
+        "NAMES_PRESENT_VERSIONS_AND_INSTANCES_UNVERIFIED"
+    )
     properties = {p: props_file(root / path) for p, path in PROPS.items()}
     mounts = fstab_probe(root)
     return {
@@ -213,12 +234,18 @@ def analyze(root: Path):
         "framework_required_hal_names": sorted(framework),
         "device_manifest_hal_names": sorted(vendor),
         "candidate_missing_hal_names_unverified": candidates,
+        "framework_manifest_hal_names": sorted(framework_manifest),
+        "device_matrix_files": device_matrix_files,
+        "device_matrix_required_hal_names": sorted(device_matrix_required),
+        "device_matrix_missing_framework_hal_names": missing_device_matrix_names,
+        "device_matrix_name_check_status": device_matrix_status,
         "properties": properties,
         "fstab_probes": mounts,
         "unresolved": [
             "Full Android checkvintf with assembled FCM level, SKU and all XML/APEX fragments has NOT been run",
             "Zero donor framework required HAL names must be treated as UNKNOWN, not zero incompatibilities",
             "Exact HAL interface/version/instance requirements have NOT been checked",
+            "Device matrix required HAL names are compared against system/system_ext/product framework manifests ONLY at the name level",
             "F741N vendor_boot/init_boot first-stage fstab and boot mounting have NOT been inspected",
             "SELinux policy compatibility and services.jar patch boot behavior have NOT been validated",
             "AVB0 parsing does not validate stock signatures or rebuilt super hashtrees",
@@ -264,6 +291,11 @@ def main(argv=None):
               len(result["candidate_missing_hal_names_unverified"]))
         for name in result["candidate_missing_hal_names_unverified"][:30]:
             print("  CANDIDATE:", name)
+    print("Device matrix required HAL names:", len(result["device_matrix_required_hal_names"]))
+    print("Device matrix/framework HAL name check:",
+          result["device_matrix_name_check_status"])
+    print("Missing framework HAL names required by device matrix:",
+          result["device_matrix_missing_framework_hal_names"])
     print("Stock vendor/odm fstab files:", len(result["fstab_probes"]))
     print("STATUS:", result["status"])
     print("Report:", args.output)
