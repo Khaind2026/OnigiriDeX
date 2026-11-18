@@ -203,3 +203,57 @@ framework/vendor ABI, kernel/DTB/DTBO, SELinux or DeX behavior.
 The comparison is now automated by
 `scripts/compare_b6q_first_stage_fstab.py` and integrated into
 `scripts/diagnose_b6q_all.py`, with fail-closed synthetic tests.
+
+
+## 2026-11-18 — release gates and privacy-safe bootloader inspection
+
+The port's offline source and mount audits have passed their limited
+structural scope, but this is NOT a bootable ROM certification.
+
+The new **release readiness engine** `scripts/b6q_release_gate.py` is
+integrated into `scripts/diagnose_b6q_all.py`. It separates the checks:
+
+- Original F741N/F956N partition stage: PASS_OFFLINE when size/fs verified.
+- F741N boot checksum and first-stage fstab: PASS_OFFLINE when evidence matches.
+- Fold6 DeX source changes: PASS_SOURCE_ONLY, not functional validation.
+- Official host `checkvintf`: blocks release until a relevant host check runs.
+- Combined SELinux: blocks release until the F741N vendor policy version,
+  Fold6 system mapping, and combined policy loading are validated.
+- **AVB**: blocks release when stock signed root hashtrees for system/product/
+  system_ext overlap with the rebuilt Fold6-derived data.
+- Actual F741N bootloader state, antirollback and tested stock recovery path:
+  require direct trusted target-device evidence.
+- DeX and 120 Hz HDMI/flip-state behavior: require a controlled device test.
+
+`scripts/audit_b6q_selinux_inputs.py` tests the stock F741N
+`plat_sepolicy_vers.txt` and Fold6 system mapping presence without changing
+any policy files or pretending that a file match is a successful sepolicy
+compile.
+
+`scripts/run_b6q_checkvintf.py` also searches for an existing AOSP host
+`checkvintf` binary in `out/host/linux-x86/bin`; no unknown third-party
+executables are installed automatically.
+
+`scripts/inspect_b6q_device_bootstate.py` optionally reads a narrow set of
+bootloader-related Android properties if **exactly one authorized SM-F741N**
+is connected over ADB. It does not request root, change system state or
+record serial/IMEI, and explicitly marks property values as *unattested*.
+A 'reported unlocked' state does not authorize flashing.
+
+### Remaining physical requirement
+
+The 2026-11-18 diagnostic ZIP contains no firmware images and no live
+bootloader/recovery proof. GitHub cloud Actions also does not have access to
+the host's staged 10+ GB Odin firmware or its physical F741N test phone.
+The release cannot be honestly marked bootable/flashable until local
+Android host checks and a recoverable real-device validation succeed.
+
+One consolidated read-only command for the **existing** Debian workspace:
+
+```bash
+cd ~/OnigiriDeX && git pull --ff-only && python3 scripts/diagnose_b6q_all.py
+```
+
+It includes all previous source checks, plus SELinux mapping,
+release-gate status and optional privacy-safe ADB properties. Upload only
+the diagnostic ZIP; never include firmware partitions or signing keys.
