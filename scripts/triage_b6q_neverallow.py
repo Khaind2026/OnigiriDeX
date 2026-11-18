@@ -16,7 +16,7 @@ MAX_LINE_BYTES = 500
 # secilc/libsepol versions vary in their failure wording. Unknown syntax
 # remains UNKNOWN rather than inventing a rule/line location.
 LINE_HINT = re.compile(
-    r"(?i)\b(?:line|lineno)\s+(\d{1,9})\b|(?<!\w):(\d{1,9})(?:\D|$)"
+    r"(?i)\b(?:line|lineno)\s+(\d{1,9})\b|:(\d{1,9})(?:\D|$)"
 )
 ALLOW_CIL = re.compile(
     r"(?m)\(\s*(allow|allowx|allowxperm)\s+"
