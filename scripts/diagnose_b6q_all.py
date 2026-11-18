@@ -29,6 +29,7 @@ REPORT_PATHS = (
     "out/b6q/analysis/f741n-f956n-vintf-mount-triage-v2.json",
     "out/b6q/analysis/f741n-boot-mount-avb-precheck.json",
     "out/b6q/analysis/f741n-stock-ramdisk-content.json",
+    "out/b6q/analysis/f741n-f956n-selinux-triage.json",
 )
 TOOL_NAMES = ("python3", "git", "lz4", "avbtool", "dump.erofs",
               "extract.erofs", "apktool", "lpmake", "lpunpack", "checkvintf")
@@ -214,6 +215,12 @@ def scan(root: Path):
     except (ValueError, KeyError, TypeError, ImportError) as error:
         sections["fstab_consistency"] = issue("fstab_consistency", error)
 
+    try:
+        from audit_b6q_selinux_inputs import inspect as inspect_selinux
+        sections["selinux_inputs"] = inspect_selinux(work)
+    except (ValueError, OSError, TypeError, KeyError, ImportError) as error:
+        sections["selinux_inputs"] = issue("selinux_inputs", error)
+
     prev_chain = root / "out/b6q/analysis/f741n-bl-vbmeta-chain.json"
     if safe_file(prev_chain):
         try:
@@ -307,6 +314,9 @@ def summary_text(report):
         ),
         "fstab vendor/ramdisk agreement: " + str(
             sections.get("fstab_consistency", {}).get("status", "UNKNOWN")
+        ),
+        "SELinux donor/target policy inputs: " + str(
+            sections.get("selinux_inputs", {}).get("status", "UNKNOWN")
         ),
         "Boot: " + str(sections["boot_chain"].get("result", "UNKNOWN")),
         "Image stage: " + str(sections["stock_stage_validation"].get("result", "UNKNOWN")),
