@@ -40,19 +40,24 @@ def checked_work_tree(work):
 def map_partitions(work):
     mapping = {}
     for part, choices in PARTITION_DIRS.items():
-        matches = []
+        present = []
         for rel in choices:
             candidate = work / rel
-            if candidate.is_symlink():
+            if candidate.is_symlink() or not candidate.is_dir():
                 continue
-            if (candidate / "etc/vintf").is_dir():
-                matches.append(candidate)
-        if len(matches) != 1:
-            # Never infer from an incomplete or ambiguous extraction layout.
-            raise ValueError(
-                f"Expected one {part} directory with etc/vintf, found {len(matches)}"
-            )
-        mapping[part] = matches[0]
+            present.append(candidate)
+        with_vintf = [p for p in present if (p / "etc/vintf").is_dir()]
+        if len(with_vintf) == 1:
+            mapping[part] = with_vintf[0]
+        elif len(with_vintf) > 1:
+            raise ValueError(f"Ambiguous {part} VINTF roots")
+        elif part in ("system", "vendor"):
+            raise ValueError(f"Missing essential {part}/etc/vintf metadata")
+        elif len(present) == 1:
+            # ODM may have no VINTF XML of its own on stock F741N.
+            mapping[part] = present[0]
+        else:
+            raise ValueError(f"Missing/ambiguous optional {part} partition root")
     return mapping
 
 
