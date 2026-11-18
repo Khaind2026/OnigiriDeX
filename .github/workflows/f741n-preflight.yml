@@ -21,6 +21,7 @@ on:
       - 'scripts/inspect_b6q_bl_vbmeta_chain.py'
       - 'scripts/audit_b6q_vintf_mounts.py'
       - 'scripts/diagnose_b6q_all.py'
+      - 'scripts/run_b6q_checkvintf.py'
       - 'scripts/port_b6q.sh'
       - 'scripts/build_super_b6q.sh'
       - 'scripts/apply_b6q_settings.sh'
@@ -49,6 +50,7 @@ on:
       - 'tests/test_f741n_bl_vbmeta_chain.py'
       - 'tests/test_f741n_vintf_mount_triage.py'
       - 'tests/test_f741n_one_shot_diagnostics.py'
+      - 'tests/test_f741n_host_checkvintf.py'
       - 'tests/test_f741n_settings_adapter.py'
       - 'tests/test_f741n_settings_gateway_rebase.py'
       - 'tests/test_f741n_settings_count_rebase.py'
@@ -65,7 +67,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Compile Python preflight
-        run: python3 -m py_compile scripts/preflight_f741n.py scripts/import_duykhaidex_f741n.py scripts/inspect_f741n_f956n_archives.py scripts/inspect_super_f741n_f956n.py scripts/plan_f741n_f956n_port.py scripts/extract_b6q_images.py scripts/verify_b6q_stage.py scripts/audit_b6q_framework.py scripts/report_b6q_dex_candidates.py scripts/stage_b6q_dex_assets.py scripts/stage_b6q_boot_chain.py scripts/analyze_b6q_avb.py scripts/inspect_b6q_bl_avb.py scripts/inspect_b6q_bl_vbmeta_chain.py scripts/audit_b6q_vintf_mounts.py scripts/diagnose_b6q_all.py scripts/adapt_b6q_settings_patches.py scripts/rebase_b6q_settings_gateway.py scripts/rebase_b6q_settings_count.py scripts/rebase_b6q_dex_zone_strings.py scripts/rebase_b6q_additive_strings.py tests/test_f741n_preflight.py tests/test_f741n_import_resume.py tests/test_f741n_archive_inspection.py tests/test_f741n_super_metadata.py tests/test_f741n_port_capacity.py tests/test_f741n_extraction.py tests/test_f741n_stage_verification.py tests/test_f741n_framework_audit.py tests/test_f741n_dex_report.py tests/test_f741n_dex_assets.py tests/test_f741n_boot_chain_staging.py tests/test_f741n_avb_readiness.py tests/test_f741n_bl_avb_discovery.py tests/test_f741n_vintf_mount_triage.py tests/test_f741n_one_shot_diagnostics.py tests/test_f741n_settings_adapter.py tests/test_f741n_settings_gateway_rebase.py tests/test_f741n_settings_count_rebase.py tests/test_f741n_dex_zone_strings.py tests/test_f741n_additive_strings.py
+        run: python3 -m py_compile scripts/preflight_f741n.py scripts/import_duykhaidex_f741n.py scripts/inspect_f741n_f956n_archives.py scripts/inspect_super_f741n_f956n.py scripts/plan_f741n_f956n_port.py scripts/extract_b6q_images.py scripts/verify_b6q_stage.py scripts/audit_b6q_framework.py scripts/report_b6q_dex_candidates.py scripts/stage_b6q_dex_assets.py scripts/stage_b6q_boot_chain.py scripts/analyze_b6q_avb.py scripts/inspect_b6q_bl_avb.py scripts/inspect_b6q_bl_vbmeta_chain.py scripts/audit_b6q_vintf_mounts.py scripts/diagnose_b6q_all.py scripts/run_b6q_checkvintf.py scripts/adapt_b6q_settings_patches.py scripts/rebase_b6q_settings_gateway.py scripts/rebase_b6q_settings_count.py scripts/rebase_b6q_dex_zone_strings.py scripts/rebase_b6q_additive_strings.py tests/test_f741n_preflight.py tests/test_f741n_import_resume.py tests/test_f741n_archive_inspection.py tests/test_f741n_super_metadata.py tests/test_f741n_port_capacity.py tests/test_f741n_extraction.py tests/test_f741n_stage_verification.py tests/test_f741n_framework_audit.py tests/test_f741n_dex_report.py tests/test_f741n_dex_assets.py tests/test_f741n_boot_chain_staging.py tests/test_f741n_avb_readiness.py tests/test_f741n_bl_avb_discovery.py tests/test_f741n_vintf_mount_triage.py tests/test_f741n_one_shot_diagnostics.py tests/test_f741n_host_checkvintf.py tests/test_f741n_settings_adapter.py tests/test_f741n_settings_gateway_rebase.py tests/test_f741n_settings_count_rebase.py tests/test_f741n_dex_zone_strings.py tests/test_f741n_additive_strings.py
       - name: Test mixed model selection without firmware files
         run: python3 -m unittest discover -s tests -p 'test_f741n*.py' -v
 
