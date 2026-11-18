@@ -122,7 +122,7 @@ def compile_policy(work, compiler=None, timeout=120):
     result["inputs"] = [{"label": label, "bytes": size} for label, _, size in files]
     binary = resolve_compiler(work, compiler)
     if not binary:
-        result["status"] = "NOT_RUN_SE CILC_MISSING".replace(" ", "")
+        result["status"] = "NOT_RUN_SECILC_MISSING"
         return result
 
     all_inputs = [str(path) for _, path, _ in files]
