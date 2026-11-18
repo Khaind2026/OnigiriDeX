@@ -57,6 +57,10 @@ def specs(hal):
     versions = [parse_ver(v, kinds) for v in plain(hal, "version")]
     uncertain = any(v is None for v in versions)
     if not versions:
+        # A HIDL interface without an explicit version is not a known
+        # match. Mark it unsupported; FQNAME may encode a known version
+        # independently and will still be evaluated conservatively.
+        uncertain = True
         versions = [None]
     requirements = []
     for interface in children(hal, "interface"):
