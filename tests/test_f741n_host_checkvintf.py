@@ -59,12 +59,28 @@ class HostVintfTests(unittest.TestCase):
     @mock.patch("run_b6q_checkvintf.subprocess.run")
     def test_host_incompatibility_is_blocker(self, execute):
         execute.return_value = subprocess.CompletedProcess(
-            [], 1, "", "HAL version mismatch"
+            [], 65, "INCOMPATIBLE\\n", "HAL version mismatch"
         )
         report = run_check(self.root, tool="/mock/checkvintf")
         self.assertEqual(report["status"], "HOST_VINTF_CHECK_FAILED")
         self.assertIn("HAL version mismatch", report["stderr"])
         self.assertFalse(report["flashable"])
+
+    @mock.patch("run_b6q_checkvintf.subprocess.run")
+    def test_aosp_tool_error_cannot_be_reported_as_incompatible(self, execute):
+        execute.return_value = subprocess.CompletedProcess(
+            [], 70, "", "Missing VINTF metadata"
+        )
+        report = run_check(self.root, tool="/mock/checkvintf")
+        self.assertEqual(report["status"], "HOST_VINTF_CHECK_TOOL_ERROR")
+        self.assertFalse(report["flashable"])
+
+    @mock.patch("run_b6q_checkvintf.subprocess.run")
+    def test_zero_exit_stub_without_compatible_text_does_not_pass(self, execute):
+        execute.return_value = subprocess.CompletedProcess([], 0, "", "")
+        report = run_check(self.root, tool="/mock/checkvintf")
+        self.assertEqual(report["status"], "HOST_VINTF_CHECK_TOOL_ERROR")
+        self.assertFalse(report["bootable"])
 
     def test_missing_vendor_build_property_does_not_guess(self):
         (self.root / "vendor/build.prop").unlink()
