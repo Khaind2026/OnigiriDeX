@@ -54,6 +54,10 @@ def collect(work=WORK):
         report = compile_policy(work)
         data["secilc"] = safe_status(report.get("status"))
         data["neverallow"] = safe_status(report.get("neverallow_check"))
+        data["strict_phase"] = safe_status(report.get("strict_pass_status"))
+        data["strict_failure_category"] = safe_status(
+            report.get("strict_failure_category")
+        )
         inputs = report.get("passes") or {}
         data["secilc_errors"] = scrub_errors(
             (inputs.get("init_equivalent") or {}).get("stderr_tail", "")
@@ -61,6 +65,8 @@ def collect(work=WORK):
     except (OSError, ValueError, TypeError, KeyError, ImportError):
         data["secilc"] = "NOT_RUN_INCOMPLETE_INPUT"
         data["neverallow"] = "NOT_RUN"
+        data["strict_phase"] = "NOT_RUN"
+        data["strict_failure_category"] = "NOT_RUN"
         data["secilc_errors"] = ""
     try:
         report = run_check(work)
@@ -86,6 +92,9 @@ def markdown_report(result, include_errors=False):
         "| Mapping file found | " + str(bool(result.get("mapping_exists"))) + " |",
         "| Mixed host SELinux secilc | " + safe_status(result.get("secilc")) + " |",
         "| Strict host neverallow | " + safe_status(result.get("neverallow")) + " |",
+        "| Strict compiler pass | " + safe_status(result.get("strict_phase")) + " |",
+        "| Strict failure category (no raw errors) | " +
+            safe_status(result.get("strict_failure_category")) + " |",
         "| AOSP host checkvintf | " + safe_status(result.get("checkvintf")) + " |",
         "| Rebuilt system verified boot | BLOCKED_UNVERIFIED |",
         "| Odin AP authorized | NO |",
