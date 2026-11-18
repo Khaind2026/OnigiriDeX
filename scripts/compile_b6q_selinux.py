@@ -97,6 +97,33 @@ def resolve_compiler(work, compiler=None):
     return None
 
 
+def classify_strict_failure(phase):
+    """Expose only a bounded category, never raw CIL or host paths."""
+    if not isinstance(phase, dict):
+        return "NOT_RUN"
+    status = phase.get("status")
+    if status == "COMPILED":
+        return "PASSED"
+    if status == "ERROR":
+        if phase.get("reason") == "TimeoutExpired":
+            return "COMPILER_TIMEOUT"
+        return "COMPILER_EXECUTION_ERROR"
+    if status != "FAILED":
+        return "NOT_RUN"
+    output = (str(phase.get("stderr_tail", "")) + "\n" +
+              str(phase.get("stdout_tail", ""))).lower()
+    if "neverallow" in output:
+        return "NEVERALLOW_VIOLATION_DETECTED"
+    if any(word in output for word in (
+            "unknown type", "unknown role", "unknown attribute",
+            "undefined", "unresolved", "failed to resolve", "not declared")):
+        return "UNRESOLVED_POLICY_SYMBOL"
+    if any(word in output for word in (
+            "syntax error", "invalid cil", "failed to parse", "parse error")):
+        return "CIL_SYNTAX_ERROR"
+    return "OTHER_STRICT_COMPILATION_FAILURE"
+
+
 def compile_policy(work, compiler=None, timeout=120):
     result = {
         "target": "SM-F741N", "donor": "SM-F956N",
@@ -151,6 +178,10 @@ def compile_policy(work, compiler=None, timeout=120):
     result["passes"] = outcomes
     init_status = outcomes["init_equivalent"]["status"]
     strict_status = outcomes["strict_neverallow"]["status"]
+    result["strict_pass_status"] = strict_status
+    result["strict_failure_category"] = classify_strict_failure(
+        outcomes["strict_neverallow"]
+    )
     result["status"] = (
         "HOST_SELINUX_COMPILE_PASSED_RUNTIME_UNVERIFIED"
         if init_status == "COMPILED" else
@@ -159,7 +190,8 @@ def compile_policy(work, compiler=None, timeout=120):
     )
     result["neverallow_check"] = (
         "PASSED_HOST_ONLY" if strict_status == "COMPILED" else
-        "FAILED_OR_NOT_VERIFIED"
+        "FAILED_HOST_ONLY" if strict_status == "FAILED" else
+        "NOT_VERIFIED_HOST_ONLY"
     )
     return result
 
