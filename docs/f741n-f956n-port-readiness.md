@@ -129,3 +129,43 @@ cd ~/OnigiriDeX && git pull --ff-only && python3 scripts/diagnose_b6q_all.py
 Only share the resulting ZIP under `out/b6q/diagnostics`. Do not attach
 stock Odin firmware images, partition images, certificates, or any private
 cryptographic keys.
+
+## 2026-11-18 — results from updated one-shot F741N diagnostic ZIP
+
+Analyzed user-supplied ZIP dated 2026-11-18, generated with
+\`audit-f741n-vbmeta-chain-20261118\` commit \`9a38aba\`.
+
+- Stock F741N \`boot.img\`: header v4; kernel bytes 36,952,576; ramdisk 0.
+- Stock F741N \`init_boot.img\`: header v4; ramdisk 1,716,724 bytes.
+- Stock F741N \`vendor_boot.img\`: header v4, page size 4096; vendor ramdisk
+  14,947,477 bytes; DTB 6,793,838 bytes; bootconfig 198 bytes; one v4
+  ramdisk fragment (type 1, offset 0; fragment name empty).
+- All seven selected original F741N stock boot files match stage manifest.
+- Stock \`vendor/etc/fstab.qcom\` has EROFS variants with \`logical\`,
+  \`first_stage_mount\` and \`avb\` for all seven selected dynamic partitions.
+  This is a format check, not proof that the kernel mounts them at boot.
+- AVB stock BL hashtree descriptors include \`system\`, \`product\`,
+  \`system_ext\`; rebuilt images must not be presumed accepted by that chain.
+- AOSP host \`checkvintf\` was not installed; official host
+  compatibility check has NOT run.
+- F741N vendor device matrix mandatory HAL name check was 5/5; it remains
+  only a name-level comparison.
+- Rebuilt super engineering preview exists (10,093,443,080 bytes) with SHA256
+  record; the full 10 GB file has NOT been rehashed in this diagnostic run.
+
+### New source work after reviewing the ZIP
+
+\`scripts/inspect_b6q_stock_ramdisks.py\` now performs bounded read-only
+examination of the existing original F741N \`init_boot\` and \`vendor_boot\`
+ramdisk sections. Supports gzip, LZ4, and uncompressed newc CPIO; gathers
+only filenames, sizes and dynamic fstab flags, never packages ramdisk binaries
+into an output ZIP.
+
+This is integrated into \`scripts/diagnose_b6q_all.py\`, with synthetic
+tests under \`tests/test_f741n_stock_ramdisk_inspection.py\`.
+
+**Next proof needed**: compare the ramdisk-supplied fstab and init scripts
+against the preserved F741N vendor/odm rules, then perform an actual AOSP
+host checkvintf run using the correct SKU/APEX/kernel inputs. AVB/SELinux
+and bootability remain unresolved even when those steps pass. Do not flash
+the preview.
