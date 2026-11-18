@@ -16,7 +16,9 @@ def statuses():
         "policy_mapping": "SELINUX_FILES_PRESENT_COMBINED_POLICY_NOT_VERIFIED",
         "mapping_exists": True,
         "secilc": "HOST_SELINUX_COMPILE_FAILED",
-        "neverallow": "FAILED_OR_NOT_VERIFIED",
+        "neverallow": "FAILED_HOST_ONLY",
+        "strict_phase": "FAILED",
+        "strict_failure_category": "NEVERALLOW_VIOLATION_DETECTED",
         "checkvintf": "NOT_RUN_CHECKVINTF_MISSING",
         "secilc_errors": "/home/myname/secret_project/hello.cil: invalid CIL type\n",
         "checkvintf_errors": "",
@@ -42,6 +44,8 @@ class FastStatusTests(unittest.TestCase):
         report = markdown_report(statuses())
         self.assertIn("HOST_SELINUX_COMPILE_FAILED", report)
         self.assertIn("BLOCKED_UNVERIFIED", report)
+        self.assertIn("Strict failure category", report)
+        self.assertIn("NEVERALLOW_VIOLATION_DETECTED", report)
         self.assertNotIn("myname", report)
         self.assertNotIn("secret_project", report)
         self.assertNotIn("invalid CIL type", report)
