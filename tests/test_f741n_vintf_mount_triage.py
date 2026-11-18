@@ -29,6 +29,14 @@ class TriageTests(unittest.TestCase):
                 '<manifest version="1.0" type="device" target-level="8">'
                 '<hal><name>android.hardware.graphics.composer</name></hal>'
                 '</manifest>',
+            "vendor/etc/vintf/compatibility_matrix.xml":
+                '<compatibility-matrix version="1.0" type="device">'
+                '<hal><name>android.frameworks.sensorservice</name></hal>'
+                '</compatibility-matrix>',
+            "system/system/etc/vintf/manifest.xml":
+                '<manifest version="1.0" type="framework">'
+                '<hal><name>android.frameworks.sensorservice</name></hal>'
+                '</manifest>',
             "vendor/etc/fstab.test":
                 '/dev/block/by-name/system /system erofs ro wait,logical,first_stage_mount,avb\n',
             "system/system/build.prop": "ro.build.version.sdk=35\n",
@@ -52,6 +60,11 @@ class TriageTests(unittest.TestCase):
         self.assertEqual(len(report["fstab_probes"]), 1)
         self.assertTrue(report["fstab_probes"][0]["matching_rules"][0]["mentions_avb"])
         self.assertEqual(report["properties"]["system"]["properties"]["ro.build.version.sdk"], "35")
+        self.assertEqual(report["device_matrix_required_hal_names"],
+                         ["android.frameworks.sensorservice"])
+        self.assertEqual(report["device_matrix_missing_framework_hal_names"], [])
+        self.assertEqual(report["device_matrix_name_check_status"],
+                         "NAMES_PRESENT_VERSIONS_AND_INSTANCES_UNVERIFIED")
 
     def test_rejects_incorrect_donor(self):
         (self.root / "port-origin.json").write_text(json.dumps({
@@ -94,6 +107,23 @@ class TriageTests(unittest.TestCase):
         self.assertIsNone(report["candidate_missing_hal_names_unverified"])
         self.assertEqual(report["framework_hal_coverage"],
                          "UNKNOWN_NO_FRAMEWORK_REQUIRED_HAL_NAMES")
+        self.assertFalse(report["flashable"])
+
+    def test_device_matrix_missing_required_framework_hal(self):
+        (self.root / "system/system/etc/vintf/manifest.xml").unlink()
+        report = analyze(self.root)
+        self.assertEqual(report["device_matrix_missing_framework_hal_names"],
+                         ["android.frameworks.sensorservice"])
+        self.assertEqual(report["device_matrix_name_check_status"],
+                         "NAME_LEVEL_MISSING_REQUIREMENTS")
+        self.assertFalse(report["flashable"])
+
+    def test_missing_device_matrix_is_unknown_not_a_pass(self):
+        (self.root / "vendor/etc/vintf/compatibility_matrix.xml").unlink()
+        report = analyze(self.root)
+        self.assertIsNone(report["device_matrix_missing_framework_hal_names"])
+        self.assertEqual(report["device_matrix_name_check_status"],
+                         "UNKNOWN_DEVICE_MATRIX_NOT_FOUND")
         self.assertFalse(report["flashable"])
 
 
