@@ -279,6 +279,12 @@ def scan(root: Path):
     except OSError as error:
         sections["existing_reports"] = issue("existing_reports", error)
 
+    try:
+        from b6q_release_gate import evaluate as evaluate_release
+        sections["rom_release_gate"] = evaluate_release(sections)
+    except (ValueError, KeyError, TypeError, ImportError) as error:
+        sections["rom_release_gate"] = issue("rom_release_gate", error)
+
     report["bootable"] = "NOT_VERIFIED"
     report["flashable"] = False
     return report
@@ -317,6 +323,9 @@ def summary_text(report):
         ),
         "SELinux donor/target policy inputs: " + str(
             sections.get("selinux_inputs", {}).get("status", "UNKNOWN")
+        ),
+        "ROM release gate: " + str(
+            sections.get("rom_release_gate", {}).get("status", "UNKNOWN")
         ),
         "Boot: " + str(sections["boot_chain"].get("result", "UNKNOWN")),
         "Image stage: " + str(sections["stock_stage_validation"].get("result", "UNKNOWN")),
