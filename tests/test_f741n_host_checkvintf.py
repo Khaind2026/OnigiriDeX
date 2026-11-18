@@ -8,7 +8,7 @@ import unittest
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from run_b6q_checkvintf import map_partitions, run_check
+from run_b6q_checkvintf import map_partitions, run_check, find_host_checkvintf
 
 
 class HostVintfTests(unittest.TestCase):
@@ -78,6 +78,16 @@ class HostVintfTests(unittest.TestCase):
         }))
         with self.assertRaisesRegex(ValueError, "Unexpected"):
             run_check(self.root, tool="/mock/checkvintf")
+
+    @mock.patch("run_b6q_checkvintf.shutil.which", return_value=None)
+    def test_finds_host_binary_in_standard_aosp_output(self, _):
+        workspace = self.root / "workspace"
+        local_work = workspace / "out/target/b6q/SM-F741N/work_dir"
+        local_work.mkdir(parents=True)
+        binary = workspace / "out/host/linux-x86/bin/checkvintf"
+        binary.parent.mkdir(parents=True)
+        binary.write_text("test fixture")
+        self.assertEqual(find_host_checkvintf(local_work), str(binary))
 
 
 if __name__ == "__main__":
