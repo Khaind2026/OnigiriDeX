@@ -208,6 +208,12 @@ def scan(root: Path):
     except (OSError, ValueError, TypeError, KeyError, ImportError) as error:
         sections["stock_ramdisk_content"] = issue("stock_ramdisk_content", error)
 
+    try:
+        from compare_b6q_first_stage_fstab import evaluate as compare_first_stage
+        sections["fstab_consistency"] = compare_first_stage(sections)
+    except (ValueError, KeyError, TypeError, ImportError) as error:
+        sections["fstab_consistency"] = issue("fstab_consistency", error)
+
     prev_chain = root / "out/b6q/analysis/f741n-bl-vbmeta-chain.json"
     if safe_file(prev_chain):
         try:
@@ -298,6 +304,9 @@ def summary_text(report):
         ),
         "Stock ramdisk content: " + str(
             sections.get("stock_ramdisk_content", {}).get("status", "UNKNOWN")
+        ),
+        "fstab vendor/ramdisk agreement: " + str(
+            sections.get("fstab_consistency", {}).get("status", "UNKNOWN")
         ),
         "Boot: " + str(sections["boot_chain"].get("result", "UNKNOWN")),
         "Image stage: " + str(sections["stock_stage_validation"].get("result", "UNKNOWN")),
