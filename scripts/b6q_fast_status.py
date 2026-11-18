@@ -42,6 +42,7 @@ def collect(work=WORK):
     from compile_b6q_selinux import compile_policy
     from run_b6q_checkvintf import run_check
     from audit_b6q_vintf_contracts import inspect as inspect_hal_contracts
+    from audit_b6q_avb_trust_graph import audit as inspect_avb_graph
 
     data = {}
     try:
@@ -63,12 +64,20 @@ def collect(work=WORK):
         data["secilc_errors"] = scrub_errors(
             (inputs.get("init_equivalent") or {}).get("stderr_tail", "")
             or report.get("reason", ""))
+        triage = report.get("neverallow_rule_triage") or {}
+        safe = triage.get("public_fields") or {}
+        data["neverallow_locations_status"] = safe_status(safe.get("status"))
+        data["neverallow_location_count"] = int(
+            safe.get("suspected_violation_lines") or 0
+        )
     except (OSError, ValueError, TypeError, KeyError, ImportError):
         data["secilc"] = "NOT_RUN_INCOMPLETE_INPUT"
         data["neverallow"] = "NOT_RUN"
         data["strict_phase"] = "NOT_RUN"
         data["strict_failure_category"] = "NOT_RUN"
         data["secilc_errors"] = ""
+        data["neverallow_locations_status"] = "NOT_RUN"
+        data["neverallow_location_count"] = 0
     try:
         report = run_check(work)
         data["checkvintf"] = safe_status(report.get("status"))
@@ -82,11 +91,33 @@ def collect(work=WORK):
         data["hal_required"] = int(contract.get("required_entries", 0))
         data["hal_matched"] = int(contract.get("matched_entries", 0))
         data["hal_candidates"] = len(contract.get("possible_mismatches", []))
+        data["hal_unknown_reasons"] = dict(
+            contract.get("unsupported_reason_counts") or {}
+        )
+        data["hal_incomplete_cause_count"] = len(
+            contract.get("incomplete_cause_codes") or []
+        )
     except (OSError, ValueError, KeyError, TypeError, ImportError):
         data["hal_contracts"] = "NOT_RUN_INCOMPLETE_INPUT"
         data["hal_required"] = 0
         data["hal_matched"] = 0
         data["hal_candidates"] = 0
+        data["hal_unknown_reasons"] = {}
+        data["hal_incomplete_cause_count"] = 0
+    try:
+        graph = inspect_avb_graph(
+            work, ROOT / "out/b6q/analysis/f741n-bl-vbmeta-chain.json",
+            ROOT / "out/b6q/analysis/f741n-stock-boot-chain/vbmeta_system.img",
+        )
+        data["avb_graph"] = safe_status(graph.get("status"))
+        data["avb_root_overlap"] = len(
+            (graph.get("trust_graph") or {}).get(
+                "modified_partition_signed_descriptor_overlap", []
+            )
+        )
+    except (OSError, ValueError, TypeError, KeyError, ImportError):
+        data["avb_graph"] = "NOT_RUN_INCOMPLETE_INPUT"
+        data["avb_root_overlap"] = 0
     return data
 
 
@@ -107,6 +138,10 @@ def markdown_report(result, include_errors=False):
         "| Strict compiler pass | " + safe_status(result.get("strict_phase")) + " |",
         "| Strict failure category (no raw errors) | " +
             safe_status(result.get("strict_failure_category")) + " |",
+        "| SELinux neverallow rule location scan | " +
+            safe_status(result.get("neverallow_locations_status")) + " |",
+        "| SELinux neverallow location hints | " +
+            str(int(result.get("neverallow_location_count", 0))) + " |",
         "| AOSP host checkvintf | " + safe_status(result.get("checkvintf")) + " |",
         "| F741N required HAL contracts (partial XML audit) | " +
             safe_status(result.get("hal_contracts")) + " |",
@@ -115,11 +150,22 @@ def markdown_report(result, include_errors=False):
             str(int(result.get("hal_required", 0))) + " |",
         "| HAL mismatch candidates | " +
             str(int(result.get("hal_candidates", 0))) + " |",
+        "| VINTF XML unknown cause categories | " +
+            str(int(result.get("hal_incomplete_cause_count", 0))) + " |",
+        "| AVB BL signed descriptor overlap | " +
+            safe_status(result.get("avb_graph")) + " |",
+        "| AVB signed modified partitions count | " +
+            str(int(result.get("avb_root_overlap", 0))) + " |",
         "| Rebuilt system verified boot | BLOCKED_UNVERIFIED |",
         "| Odin AP authorized | NO |",
         "",
         "Public sanitized statuses only. Not a boot, AVB or flash safety approval.",
     ]
+    # Only allowlisted reason identifiers and integer counts from XML.
+    reasons = result.get("hal_unknown_reasons") or {}
+    for reason, value in sorted(reasons.items()):
+        if safe_status(reason) != "UNKNOWN" and type(value) is int and 0 < value < 10000:
+            lines.append("| VINTF unknown " + safe_status(reason) + " | " + str(value) + " |")
     if include_errors:
         for label, key in (("SELinux compiler", "secilc_errors"),
                            ("Host checkvintf", "checkvintf_errors")):

@@ -24,6 +24,12 @@ def statuses():
         "hal_required": 5,
         "hal_matched": 4,
         "hal_candidates": 1,
+        "hal_incomplete_cause_count": 2,
+        "hal_unknown_reasons": {"VERSION_NOT_EXPLICIT": 2, "REGEX_INSTANCE_NEEDS_LIBVINTF": 1},
+        "neverallow_locations_status": "NEVERALLOW_RULE_LOCATIONS_IDENTIFIED_PARTIALLY",
+        "neverallow_location_count": 3,
+        "avb_graph": "BLOCKED_STOCK_BL_ROOT_HASHTREE_COVERS_REBUILT_SYSTEM",
+        "avb_root_overlap": 3,
         "secilc_errors": "/home/myname/secret_project/hello.cil: invalid CIL type\n",
         "checkvintf_errors": "",
     }
@@ -53,6 +59,10 @@ class FastStatusTests(unittest.TestCase):
         self.assertIn("POSSIBLE_F741N_F956N_HAL_CONTRACT_MISMATCH", report)
         self.assertIn("4/5", report)
         self.assertIn("HAL mismatch candidates", report)
+        self.assertIn("VERSION_NOT_EXPLICIT", report)
+        self.assertIn("NEVERALLOW_RULE_LOCATIONS_IDENTIFIED_PARTIALLY", report)
+        self.assertIn("AVB signed modified partitions count", report)
+        self.assertIn("BLOCKED_STOCK_BL_ROOT_HASHTREE_COVERS_REBUILT_SYSTEM", report)
         self.assertNotIn("myname", report)
         self.assertNotIn("secret_project", report)
         self.assertNotIn("invalid CIL type", report)

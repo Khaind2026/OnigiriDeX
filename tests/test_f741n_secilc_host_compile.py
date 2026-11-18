@@ -77,6 +77,8 @@ class SeLinuxCompileTests(unittest.TestCase):
         self.assertEqual(r["strict_pass_status"], "FAILED")
         self.assertEqual(r["neverallow_check"], "FAILED_HOST_ONLY")
         self.assertEqual(r["strict_failure_category"], "NEVERALLOW_VIOLATION_DETECTED")
+        self.assertEqual(r["neverallow_rule_triage"]["strict_compiler_status"], "FAILED")
+        self.assertFalse(r["neverallow_rule_triage"]["flashable"])
         self.assertFalse(r["flashable"])
 
     def test_strict_error_categories_do_not_emit_raw_compiler_log(self):

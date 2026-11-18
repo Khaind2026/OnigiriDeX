@@ -57,6 +57,10 @@ def specs(hal):
     versions = [parse_ver(v, kinds) for v in plain(hal, "version")]
     uncertain = any(v is None for v in versions)
     if not versions:
+        # A HIDL FQNAME contains a version, but old-style <interface>
+        # without <version> does not. Distinguish these two layouts.
+        if children(hal, "interface") or not plain(hal, "fqname"):
+            uncertain = True
         versions = [None]
     requirements = []
     for interface in children(hal, "interface"):
@@ -98,6 +102,41 @@ def specs(hal):
     if not requirements:
         uncertain = True
     return requirements, uncertain
+
+
+def unexplained_hal_reasons(hal):
+    """Classify why a HAL XML entry cannot be fully checked offline.
+
+    Only static reason codes are for public status; source HAL names/paths stay
+    in the local detailed report. This is not AOSP libvintf validation.
+    """
+    reasons = set()
+    kind = hal.get("format", "hidl").lower()
+    if kind not in ("hidl", "aidl"):
+        return ["UNSUPPORTED_HAL_FORMAT"]
+    names = plain(hal, "name")
+    if len(names) != 1 or not names[0]:
+        reasons.add("MISSING_OR_DUPLICATE_HAL_NAME")
+    versions = plain(hal, "version")
+    if not versions:
+        reasons.add("VERSION_NOT_EXPLICIT")
+    elif any(parse_ver(v, kind) is None for v in versions):
+        reasons.add("UNSUPPORTED_VERSION_SYNTAX")
+    for iface in children(hal, "interface"):
+        if len(plain(iface, "name")) != 1:
+            reasons.add("MISSING_OR_DUPLICATE_INTERFACE_NAME")
+        if plain(iface, "regex-instance"):
+            reasons.add("REGEX_INSTANCE_NEEDS_LIBVINTF")
+        if not plain(iface, "instance") and not plain(iface, "regex-instance"):
+            reasons.add("INSTANCE_NOT_EXPLICIT")
+    for fq in plain(hal, "fqname"):
+        if not (FQ_HIDL if kind == "hidl" else FQ_AIDL).fullmatch(fq):
+            reasons.add("UNSUPPORTED_FQNAME_SYNTAX")
+    if not children(hal, "interface") and not plain(hal, "fqname"):
+        reasons.add("INTERFACE_NOT_EXPLICIT")
+    if not reasons:
+        reasons.add("UNMODELED_HAL_RULE")
+    return sorted(reasons)
 
 
 def compatible_version(required, offered, kind):
@@ -167,11 +206,15 @@ def inspect(work):
                         unknown_inputs.append({
                             "role": role, "hal": pkg[0] if pkg else "UNKNOWN",
                             "issue": "UNSUPPORTED_XML_HAL_LAYOUT",
+                            "reasons": unexplained_hal_reasons(hal),
+                            "source_file": str(path.relative_to(work)),
                         })
             except (ET.ParseError, OSError, ValueError) as exc:
                 unknown_inputs.append({
                     "role": role, "file": path.name,
                     "issue": "VINTF_XML_PARSE_OR_FORMAT_ERROR",
+                    "reasons": ["XML_PARSE_OR_FORMAT_ERROR"],
+                    "source_file": str(path.relative_to(work)),
                 })
     matched, absent, unresolved = [], [], []
     for name, kind, version, iface, instance in sorted(set(required), key=str):
@@ -202,6 +245,28 @@ def inspect(work):
         status = "POSSIBLE_F741N_F956N_HAL_CONTRACT_MISMATCH"
     else:
         status = "HAL_CONTRACTS_MATCH_PARTIAL_NOT_LIBVINTF"
+    # Provide strictly allowlisted reason counts to the public status bridge.
+    # This can explain INCOMPLETE even when all required HALs matched.
+    reason_counts = {}
+    role_reason_counts = {}
+    for item in unknown_inputs:
+        for reason in item.get("reasons", ["UNMODELED_HAL_RULE"]):
+            reason_counts[reason] = reason_counts.get(reason, 0) + 1
+            key = item["role"] + "__" + reason
+            role_reason_counts[key] = role_reason_counts.get(key, 0) + 1
+    # Evidence for missing source files or unmatched required interface
+    # requirements is kept separate from unrelated XML layout uncertainty.
+    incomplete_causes = []
+    if unknown_inputs:
+        incomplete_causes.append("UNMODELED_XML_HAL_ENTRIES")
+    if unresolved:
+        incomplete_causes.append("REQUIRED_HAL_VERSION_OR_INTERFACE_UNKNOWN")
+    if absent:
+        incomplete_causes.append("POSSIBLE_MISSING_REQUIRED_HAL_CONTRACT")
+    if parsed["device_matrix"] == 0 or parsed["manifest"] == 0:
+        incomplete_causes.append("MISSING_COMPATIBILITY_XML_SOURCE")
+    if not required:
+        incomplete_causes.append("NO_EXPLICIT_REQUIRED_INTERFACE_ENTRIES")
     # Even perfect name/interface/instance matches do not validate Android
     # framework FCM selection, APEX, kernel config or HAL runtime services.
     return {
@@ -211,6 +276,12 @@ def inspect(work):
         "required_entries": len(set(required)), "matched_entries": len(matched),
         "possible_mismatches": absent[:100], "uncertain_requirements": unresolved[:100],
         "unsupported_xml": unknown_inputs[:100],
+        "unsupported_xml_total": len(unknown_inputs),
+        "unsupported_reason_counts": dict(sorted(reason_counts.items())),
+        "unsupported_role_reason_counts": dict(sorted(role_reason_counts.items())),
+        "incomplete_cause_codes": incomplete_causes,
+        "required_fully_matched": bool(required) and len(matched) == len(set(required))
+                                   and not unresolved and not absent,
         "libvintf_equivalence": False, "kernel_check_performed": False,
         "runtime_verified": False, "flashable": False, "bootable": False,
     }

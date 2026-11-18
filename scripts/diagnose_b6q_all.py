@@ -26,6 +26,7 @@ REPORT_PATHS = (
     "out/b6q/analysis/f741n-avb-boot-readiness.json",
     "out/b6q/analysis/f741n-bl-avb-discovery.json",
     "out/b6q/analysis/f741n-bl-vbmeta-chain.json",
+    "out/b6q/analysis/f741n-hybrid-avb-trust-graph.json",
     "out/b6q/analysis/f741n-f956n-vintf-mount-triage.json",
     "out/b6q/analysis/f741n-f956n-vintf-mount-triage-v2.json",
     "out/b6q/analysis/f741n-boot-mount-avb-precheck.json",
@@ -234,6 +235,18 @@ def scan(root: Path):
     except (ValueError, OSError, TypeError, KeyError, ImportError) as error:
         sections["selinux_inputs"] = issue("selinux_inputs", error)
 
+    # Inspect the stock signed BL descriptor dependencies on rebuilt
+    # partitions, without signing/modifying any image or claiming boot trust.
+    try:
+        from audit_b6q_avb_trust_graph import audit as audit_bl_trust
+        sections["avb_trust_graph"] = audit_bl_trust(
+            work,
+            root / "out/b6q/analysis/f741n-bl-vbmeta-chain.json",
+            root / "out/b6q/analysis/f741n-stock-boot-chain/vbmeta_system.img",
+        )
+    except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
+        sections["avb_trust_graph"] = issue("avb_trust_graph", error)
+
     prev_chain = root / "out/b6q/analysis/f741n-bl-vbmeta-chain.json"
     if safe_file(prev_chain):
         try:
@@ -295,6 +308,9 @@ def scan(root: Path):
     try:
         from compile_b6q_selinux import compile_policy as compile_host_selinux
         sections["selinux_host_compile"] = compile_host_selinux(work)
+        sections["neverallow_rule_triage"] = (
+            sections["selinux_host_compile"].get("neverallow_rule_triage", {})
+        )
     except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
         sections["selinux_host_compile"] = issue("selinux_host_compile", error)
 
@@ -334,6 +350,9 @@ def summary_text(report):
         "Target: SM-F741N   Donor: SM-F956N",
         "VINTF: " + vf,
         "AVB: " + str(sections["avb_descriptor_summary"]),
+        "BL AVB trust graph: " + str(
+            sections.get("avb_trust_graph", {}).get("status", "UNKNOWN")
+        ),
         "AOSP host checkvintf: " + str(
             sections.get("host_checkvintf", {}).get("status", "UNKNOWN")
         ),

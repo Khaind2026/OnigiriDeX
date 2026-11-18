@@ -88,7 +88,37 @@ class VintfContractTests(unittest.TestCase):
         ))
         result = inspect(self.work)
         self.assertEqual(result["status"], "INCOMPLETE_XML_HAL_CONTRACT_AUDIT")
+        self.assertEqual(
+            result["unsupported_reason_counts"]["REGEX_INSTANCE_NEEDS_LIBVINTF"], 1
+        )
+        self.assertTrue(result["incomplete_cause_codes"])
+        self.assertIn("source_file", result["unsupported_xml"][0])
         self.assertFalse(result["libvintf_equivalence"])
+
+    def test_hidl_fqname_explicit_version_not_falsely_unmodeled(self):
+        result = inspect(self.work)
+        self.assertTrue(result["required_fully_matched"])
+        self.assertNotIn("VERSION_NOT_EXPLICIT", result["unsupported_reason_counts"])
+
+    def test_versionless_interface_xml_explained_without_false_pass(self):
+        p = self.work / "system/system/etc/vintf/manifest.xml"
+        p.write_text(
+            '<manifest version="1.0" type="framework">'
+            '<hal format="hidl"><name>android.hidl.memory</name>'
+            '<interface><name>IMemory</name><instance>default</instance>'
+            '</interface></hal></manifest>'
+        )
+        result = inspect(self.work)
+        self.assertIn("VERSION_NOT_EXPLICIT", result["unsupported_reason_counts"])
+        self.assertFalse(result["required_fully_matched"])
+        self.assertEqual(result["status"], "INCOMPLETE_XML_HAL_CONTRACT_AUDIT")
+
+    def test_xml_parse_error_has_reason_code(self):
+        p = self.work / "system/system/etc/vintf/manifest.xml"
+        p.write_text("<manifest")
+        result = inspect(self.work)
+        self.assertIn("XML_PARSE_OR_FORMAT_ERROR", result["unsupported_reason_counts"])
+        self.assertFalse(result["flashable"])
 
     def test_wrong_models_rejected(self):
         (self.work / "port-origin.json").write_text(json.dumps({
