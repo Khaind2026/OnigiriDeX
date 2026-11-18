@@ -1,5 +1,38 @@
 # DuyKhaiDeX experimental target: Samsung Galaxy Z Flip6 (b6q)
 
+## Build Odin AP thử nghiệm từ chính firmware F741N/F956N đang có
+
+Một lệnh trên Debian, không tải lại firmware, không chép ZIP hay chụp terminal:
+
+```bash
+cd ~/OnigiriDeX && git pull --ff-only && python3 scripts/build_b6q_engineering_ap.py --build --publish-public
+```
+
+Lệnh sử dụng cây DeX F956N/F741N đã chuẩn bị. Nếu chưa có boot chain
+staged, nó tách **chỉ boot của AP F741N** từ Odin input đã có. Nếu chưa có
+super preview, nó chạy `scripts/build_super_b6q.sh --build` dựa trên chính
+7 phân vùng EROFS. Cuối cùng chạy quy trình LZ4 và đóng gói Odin TAR.MD5
+giống bản Flip5, kiểm tra lại MD5, SHA256 và các tên phân vùng.
+
+Output **cục bộ**, không upload firmware lên GitHub:
+
+`out/b6q/build/DuyKhaiDeX_F741N_F956N_ENGINEERING_AP_NOT_FOR_FLASH.tar.md5`
+
+Hai tệp đi cùng: `.sha256` và `.json`. Khi thêm cờ `--publish-public`,
+GitHub chỉ nhận trạng thái/size/hash trong PR #9; toàn bộ ảnh Samsung vẫn
+ở Debian. Nếu muốn dùng ổ D: để lưu AP, thêm
+`--output-dir /mnt/d/DuyKhaiDeX-build`.
+
+**Cảnh báo kỹ thuật bắt buộc:** Đây chỉ là AP kỹ thuật có định dạng Odin.
+F741N BL đã chứa hashtree descriptor bảo vệ `system/product/system_ext`,
+do đó các phân vùng sau khi port DeX F956N chưa có chứng cứ được bootloader
+tin cậy. `boot/init_boot/vendor_boot` ở đây là **stock F741N**, chưa có
+kernel root KernelSU/SUSFS b6q. Đầu ra không được phép flash, không được
+gọi là bản ROM hoàn chỉnh hoặc an toàn. Không thay đổi AVB/BL/CP/CSC
+và không cố vượt qua xác minh boot.
+
+---
+
 ## 2026-11-18: chính thức dùng khung Flip5 thay vì làm thêm kiểm tra
 
 **Mục tiêu:** port đúng logic đã build cho Flip5 F731N:
