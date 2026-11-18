@@ -27,6 +27,7 @@ REPORT_PATHS = (
     "out/b6q/analysis/f741n-bl-vbmeta-chain.json",
     "out/b6q/analysis/f741n-f956n-vintf-mount-triage.json",
     "out/b6q/analysis/f741n-f956n-vintf-mount-triage-v2.json",
+    "out/b6q/analysis/f741n-boot-mount-avb-precheck.json",
 )
 TOOL_NAMES = ("python3", "git", "lz4", "avbtool", "dump.erofs",
               "extract.erofs", "apktool", "lpmake", "lpunpack", "checkvintf")
@@ -186,6 +187,18 @@ def scan(root: Path):
     except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
         sections["host_checkvintf"] = issue("host_checkvintf", error)
 
+    try:
+        from audit_b6q_boot_mount_gate import analyze as analyze_boot_mount
+        sections["boot_mount_avb_precheck"] = analyze_boot_mount(
+            root / "out/b6q/analysis/f741n-stock-boot-chain",
+            work,
+            root / "out/b6q/analysis/f741n-bl-vbmeta-chain.json",
+        )
+    except (OSError, ValueError, TypeError, KeyError, ImportError) as error:
+        sections["boot_mount_avb_precheck"] = issue(
+            "boot_mount_avb_precheck", error
+        )
+
     prev_chain = root / "out/b6q/analysis/f741n-bl-vbmeta-chain.json"
     if safe_file(prev_chain):
         try:
@@ -270,6 +283,9 @@ def summary_text(report):
         "AVB: " + str(sections["avb_descriptor_summary"]),
         "AOSP host checkvintf: " + str(
             sections.get("host_checkvintf", {}).get("status", "UNKNOWN")
+        ),
+        "Boot/mount/AVB gate: " + str(
+            sections.get("boot_mount_avb_precheck", {}).get("status", "UNKNOWN")
         ),
         "Boot: " + str(sections["boot_chain"].get("result", "UNKNOWN")),
         "Image stage: " + str(sections["stock_stage_validation"].get("result", "UNKNOWN")),
