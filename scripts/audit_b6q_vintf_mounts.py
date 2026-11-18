@@ -17,12 +17,14 @@ DONOR = "SM-F956N"
 MAX_XML = 2 * 1024 * 1024
 MAX_XML_FILES = 160
 MOUNT_HINTS = ("first_stage_mount", "logical", "avb", "slotselect", "system", "vendor", "product", "odm")
+# EROFS extraction layouts differ: record both plausible roots explicitly,
+# rather than silently treating an uninspected path as "zero HAL needed".
 PARTITION_VINTF = {
-    "system": "system/system/etc/vintf",
-    "system_ext": "system_ext/etc/vintf",
-    "product": "product/etc/vintf",
-    "vendor": "vendor/etc/vintf",
-    "odm": "odm/etc/vintf",
+    "system": ("system/system/etc/vintf", "system/etc/vintf"),
+    "system_ext": ("system_ext/etc/vintf", "system_ext/system_ext/etc/vintf"),
+    "product": ("product/etc/vintf", "product/product/etc/vintf"),
+    "vendor": ("vendor/etc/vintf", "vendor/vendor/etc/vintf"),
+    "odm": ("odm/etc/vintf", "odm/odm/etc/vintf"),
 }
 PROPS = {
     "system": "system/system/build.prop",
@@ -150,8 +152,21 @@ def analyze(root: Path):
     if meta.get("target") != MODEL or meta.get("donor") != DONOR:
         raise ValueError("Unexpected target/donor in b6q work tree")
     entries = {}
-    for partition, relative in PARTITION_VINTF.items():
-        entries[partition] = [parse_vintf(f, root) for f in collect_xml(root / relative)]
+    probes = {}
+    for partition, candidates in PARTITION_VINTF.items():
+        files = set()
+        inspected = []
+        for relative in candidates:
+            directory = root / relative
+            xml_files = collect_xml(directory)
+            inspected.append({
+                "path": relative,
+                "directory_present": directory.is_dir() and not directory.is_symlink(),
+                "xml_files": [str(f.relative_to(root)) for f in xml_files],
+            })
+            files.update(xml_files)
+        probes[partition] = inspected
+        entries[partition] = [parse_vintf(f, root) for f in sorted(files)]
     framework = set()
     vendor = set()
     framework_files = []
@@ -166,7 +181,22 @@ def analyze(root: Path):
                 vendor.update(record["required_hal_names"])
     # This is a broad list of candidate mismatches, NOT a checkvintf result:
     # multiple FCM levels, optional requirements, SKU and APEX fragments apply.
-    candidates = sorted(framework - vendor)
+    matrix_records = [
+        record for partition in ("system", "system_ext", "product")
+        for record in entries[partition]
+        if record.get("parsed") and record.get("kind") == "compatibility-matrix"
+    ]
+    framework_matrix_parse_failures = [
+        record for partition in ("system", "system_ext", "product")
+        for record in entries[partition] if not record.get("parsed")
+    ]
+    coverage = (
+        "REQUIRED_HAL_NAMES_FOUND_IN_FRAMEWORK_MATRIX"
+        if framework else "UNKNOWN_NO_FRAMEWORK_REQUIRED_HAL_NAMES"
+    )
+    # Empty difference when the framework requirement set is empty conveys
+    # nothing. Emit null rather than the misleading integer zero.
+    candidates = sorted(framework - vendor) if framework else None
     properties = {p: props_file(root / path) for p, path in PROPS.items()}
     mounts = fstab_probe(root)
     return {
@@ -175,7 +205,11 @@ def analyze(root: Path):
         "status": "NEEDS_FULL_VINTF_AND_FIRST_STAGE_MOUNT_VERIFICATION",
         "flashable": False,
         "vintf_xml": entries,
+        "vintf_path_probes": probes,
         "framework_matrix_files": framework_files,
+        "framework_matrix_count": len(matrix_records),
+        "framework_matrix_parse_failures": framework_matrix_parse_failures,
+        "framework_hal_coverage": coverage,
         "framework_required_hal_names": sorted(framework),
         "device_manifest_hal_names": sorted(vendor),
         "candidate_missing_hal_names_unverified": candidates,
@@ -183,6 +217,7 @@ def analyze(root: Path):
         "fstab_probes": mounts,
         "unresolved": [
             "Full Android checkvintf with assembled FCM level, SKU and all XML/APEX fragments has NOT been run",
+            "Zero donor framework required HAL names must be treated as UNKNOWN, not zero incompatibilities",
             "Exact HAL interface/version/instance requirements have NOT been checked",
             "F741N vendor_boot/init_boot first-stage fstab and boot mounting have NOT been inspected",
             "SELinux policy compatibility and services.jar patch boot behavior have NOT been validated",
@@ -203,7 +238,7 @@ def main(argv=None):
     parser.add_argument("--work-dir", type=Path,
                         default=repo / "out/target/b6q/SM-F741N/work_dir")
     parser.add_argument("--output", type=Path,
-                        default=repo / "out/b6q/analysis/f741n-f956n-vintf-mount-triage.json")
+                        default=repo / "out/b6q/analysis/f741n-f956n-vintf-mount-triage-v2.json")
     args = parser.parse_args(argv)
     try:
         if args.output.exists() or args.output.is_symlink():
@@ -214,11 +249,21 @@ def main(argv=None):
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
         parser.exit(1, "F741N/F956N VINTF/mount triage failed: " + str(error) + "\n")
     print("Target F741N vendor/odm HAL names:", len(result["device_manifest_hal_names"]))
+    print("Donor F956N framework matrix XML files:", result["framework_matrix_count"])
     print("Donor F956N framework FCM required HAL names:", len(result["framework_required_hal_names"]))
-    print("Missing-name candidates (NOT confirmed failures):",
-          len(result["candidate_missing_hal_names_unverified"]))
-    for name in result["candidate_missing_hal_names_unverified"][:30]:
-        print("  CANDIDATE:", name)
+    print("FRAMEWORK HAL COVERAGE:", result["framework_hal_coverage"])
+    for part in ("system", "system_ext", "product"):
+        for check in result["vintf_path_probes"][part]:
+            print("  VINTF path:", check["path"],
+                  "present" if check["directory_present"] else "MISSING",
+                  "XML files:", len(check["xml_files"]))
+    if result["candidate_missing_hal_names_unverified"] is None:
+        print("Missing-name candidates: UNKNOWN (no framework required HAL names discovered)")
+    else:
+        print("Missing-name candidates (NOT confirmed failures):",
+              len(result["candidate_missing_hal_names_unverified"]))
+        for name in result["candidate_missing_hal_names_unverified"][:30]:
+            print("  CANDIDATE:", name)
     print("Stock vendor/odm fstab files:", len(result["fstab_probes"]))
     print("STATUS:", result["status"])
     print("Report:", args.output)
