@@ -31,6 +31,7 @@ REPORT_PATHS = (
     "out/b6q/analysis/f741n-boot-mount-avb-precheck.json",
     "out/b6q/analysis/f741n-stock-ramdisk-content.json",
     "out/b6q/analysis/f741n-f956n-selinux-triage.json",
+    "out/b6q/analysis/f741n-f956n-secilc-host-compile.json",
     "out/b6q/analysis/f741n-adb-bootloader-status.json",
 )
 TOOL_NAMES = ("python3", "git", "lz4", "avbtool", "dump.erofs",
@@ -283,6 +284,12 @@ def scan(root: Path):
         sections["existing_reports"] = issue("existing_reports", error)
 
     try:
+        from compile_b6q_selinux import compile_policy as compile_host_selinux
+        sections["selinux_host_compile"] = compile_host_selinux(work)
+    except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
+        sections["selinux_host_compile"] = issue("selinux_host_compile", error)
+
+    try:
         from inspect_b6q_device_bootstate import inspect as inspect_adb_bootstate
         sections["adb_device_bootstate"] = inspect_adb_bootstate()
     except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
@@ -332,6 +339,9 @@ def summary_text(report):
         ),
         "SELinux donor/target policy inputs: " + str(
             sections.get("selinux_inputs", {}).get("status", "UNKNOWN")
+        ),
+        "SELinux combined CIL compiler: " + str(
+            sections.get("selinux_host_compile", {}).get("status", "UNKNOWN")
         ),
         "ROM release gate: " + str(
             sections.get("rom_release_gate", {}).get("status", "UNKNOWN")

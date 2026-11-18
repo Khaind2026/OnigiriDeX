@@ -67,10 +67,21 @@ def evaluate(sections):
         "Provide/build official host checkvintf and check full FCM/SKU/APEX/kernel data",
     )
     se_state = selinux.get("status", "NO_SELINUX_INSPECTION")
+    compile_report = sections.get("selinux_host_compile", {})
+    if not isinstance(compile_report, dict):
+        compile_report = {}
+    compiler_state = compile_report.get("status", "NOT_RUN")
+    if compiler_state == "HOST_SELINUX_COMPILE_PASSED_RUNTIME_UNVERIFIED":
+        se_gate_state = "BLOCKED_HOST_COMPILED_DEVICE_POLICY_NOT_VERIFIED"
+    elif compiler_state == "HOST_SELINUX_COMPILE_FAILED":
+        se_gate_state = "BLOCKED_HOST_SELINUX_COMPILE_FAILED"
+    else:
+        se_gate_state = "BLOCKED_NOT_COMPILED"
     gates["combined_selinux_policy"] = gate(
-        "BLOCKED_NOT_COMPILED",
-        se_state,
-        "Match F741N vendor plat_sepolicy version to F956N mapping, then validate combined policy with sepolicy tools",
+        se_gate_state,
+        {"policy_mapping": se_state, "host_compile": compiler_state,
+         "host_neverallow": compile_report.get("neverallow_check", "NOT_RUN")},
+        "Resolve actual secilc failures, verify policy and mapping with AOSP init semantics, and validate combined policy on SM-F741N",
     )
 
     impacted = avb.get("modified_partition_overlap") or []
