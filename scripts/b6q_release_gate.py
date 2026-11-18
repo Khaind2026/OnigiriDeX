@@ -91,10 +91,21 @@ def evaluate(sections):
          "hash_recomputed": bool(preview.get("hash_recomputed", False))},
         "Only after boot/AVB/VINTF/SELinux proofs, re-hash and review final super layout; never flash the existing preview",
     )
+    adb_evidence = sections.get("adb_device_bootstate", {})
+    if not isinstance(adb_evidence, dict):
+        adb_evidence = {}
+    device_state = adb_evidence.get("status", "NOT_RUN")
+    if device_state == "DEVICE_REPORTS_LOCKED_CUSTOM_ROM_BLOCKED":
+        bootloader_gate_status = "BLOCKED_DEVICE_REPORTS_LOCKED"
+    elif device_state == "DEVICE_REPORTS_UNLOCKED_NOT_ATTESTED":
+        bootloader_gate_status = "BLOCKED_UNLOCKED_REPORTED_ROLLBACK_UNVERIFIED"
+    else:
+        bootloader_gate_status = "BLOCKED_DEVICE_EVIDENCE_MISSING"
     gates["bootloader_state_and_rollback"] = gate(
-        "BLOCKED_DEVICE_EVIDENCE_MISSING",
-        "No verified bootloader unlock and rollback evidence from the F741N test device",
-        "Record bootloader state, rollback index and exact firmware revision from the actual F741N",
+        bootloader_gate_status,
+        "Read-only bootloader property result: " + device_state +
+        "; rollback indices and OEM trust not cryptographically verified",
+        "Verify actual F741N bootloader state, rollback compatibility and exact firmware revision before any recoverable test",
     )
     gates["recovery_and_hardware_validation"] = gate(
         "BLOCKED_DEVICE_EVIDENCE_MISSING",
