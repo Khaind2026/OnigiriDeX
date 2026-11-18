@@ -59,7 +59,7 @@ class HostVintfTests(unittest.TestCase):
     @mock.patch("run_b6q_checkvintf.subprocess.run")
     def test_host_incompatibility_is_blocker(self, execute):
         execute.return_value = subprocess.CompletedProcess(
-            [], 65, "INCOMPATIBLE\\n", "HAL version mismatch"
+            [], 65, "INCOMPATIBLE\n", "HAL version mismatch"
         )
         report = run_check(self.root, tool="/mock/checkvintf")
         self.assertEqual(report["status"], "HOST_VINTF_CHECK_FAILED")
