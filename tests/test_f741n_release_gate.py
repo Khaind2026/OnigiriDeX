@@ -41,6 +41,24 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("BLOCKED_STOCK_SIGNED_HASHTREES_OVERLAP_MODIFIED_PARTITIONS",
                       report["gates"]["avb_trust_chain"]["status"])
 
+    def test_host_secilc_pass_still_requires_runtime_verification(self):
+        evidence = sections()
+        evidence["selinux_host_compile"] = {
+            "status": "HOST_SELINUX_COMPILE_PASSED_RUNTIME_UNVERIFIED",
+            "neverallow_check": "PASSED_HOST_ONLY",
+        }
+        report = evaluate(evidence)
+        self.assertEqual(report["gates"]["combined_selinux_policy"]["status"],
+                         "BLOCKED_HOST_COMPILED_DEVICE_POLICY_NOT_VERIFIED")
+        self.assertFalse(report["release_allowed"])
+
+    def test_host_secilc_failure_explicitly_blocks(self):
+        evidence = sections()
+        evidence["selinux_host_compile"] = {"status": "HOST_SELINUX_COMPILE_FAILED"}
+        report = evaluate(evidence)
+        self.assertEqual(report["gates"]["combined_selinux_policy"]["status"],
+                         "BLOCKED_HOST_SELINUX_COMPILE_FAILED")
+
     def test_missing_checkvintf_is_a_blocker(self):
         evidence = sections()
         evidence["host_checkvintf"]["status"] = "NOT_RUN_CHECKVINTF_MISSING"
