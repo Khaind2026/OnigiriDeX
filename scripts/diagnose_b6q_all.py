@@ -28,6 +28,7 @@ REPORT_PATHS = (
     "out/b6q/analysis/f741n-f956n-vintf-mount-triage.json",
     "out/b6q/analysis/f741n-f956n-vintf-mount-triage-v2.json",
     "out/b6q/analysis/f741n-boot-mount-avb-precheck.json",
+    "out/b6q/analysis/f741n-stock-ramdisk-content.json",
 )
 TOOL_NAMES = ("python3", "git", "lz4", "avbtool", "dump.erofs",
               "extract.erofs", "apktool", "lpmake", "lpunpack", "checkvintf")
@@ -199,6 +200,14 @@ def scan(root: Path):
             "boot_mount_avb_precheck", error
         )
 
+    try:
+        from inspect_b6q_stock_ramdisks import inspect_stock_ramdisks
+        sections["stock_ramdisk_content"] = inspect_stock_ramdisks(
+            root / "out/b6q/analysis/f741n-stock-boot-chain"
+        )
+    except (OSError, ValueError, TypeError, KeyError, ImportError) as error:
+        sections["stock_ramdisk_content"] = issue("stock_ramdisk_content", error)
+
     prev_chain = root / "out/b6q/analysis/f741n-bl-vbmeta-chain.json"
     if safe_file(prev_chain):
         try:
@@ -286,6 +295,9 @@ def summary_text(report):
         ),
         "Boot/mount/AVB gate: " + str(
             sections.get("boot_mount_avb_precheck", {}).get("status", "UNKNOWN")
+        ),
+        "Stock ramdisk content: " + str(
+            sections.get("stock_ramdisk_content", {}).get("status", "UNKNOWN")
         ),
         "Boot: " + str(sections["boot_chain"].get("result", "UNKNOWN")),
         "Image stage: " + str(sections["stock_stage_validation"].get("result", "UNKNOWN")),
