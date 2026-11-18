@@ -11,7 +11,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from build_b6q_engineering_ap import (
     ARCHIVE_NAME, STOCK_BOOT_ORDER, IMAGE_MAGIC, build, verify_input_super,
-    verify_stock_boot,
+    verify_stock_boot, classify_build_blocker, publish_blocked_ap_status,
 )
 from import_fw import verify_odin_package
 from stage_b6q_boot_chain import ASSETS
@@ -125,6 +125,34 @@ class F741NEngineeringAPTests(unittest.TestCase):
         manifest.write_text(json.dumps(obj))
         with self.assertRaisesRegex(ValueError, "Wrong F741N"):
             verify_stock_boot(self.boot)
+
+    def test_blocker_categories_never_include_local_path(self):
+        cases = [
+            ("Not enough free storage /home/very-secret", "OUTPUT_DISK_SPACE_INSUFFICIENT"),
+            ("DeX F956N patches not completed", "F956N_DEX_PORT_NOT_READY"),
+            ("Missing staged STOCK F741N boot-chain manifest", "F741N_STOCK_AP_BOOT_INPUT_MISSING_OR_INVALID"),
+            ("F741N super image differs from its checksum", "SUPER_IMAGE_BUILD_OR_CHECKSUM_FAILED"),
+            ("Missing lz4 executable", "AP_LZ4_COMPRESSION_FAILED"),
+        ]
+        for error, wanted in cases:
+            with self.subTest(error=error):
+                self.assertEqual(classify_build_blocker(ValueError(error)), wanted)
+
+    @mock.patch("build_b6q_engineering_ap.subprocess.run")
+    @mock.patch("build_b6q_engineering_ap.shutil.which", return_value="/usr/bin/gh")
+    def test_blocked_status_only_posts_allowlisted_code_not_logs(self, which, run):
+        run.return_value.returncode = 0
+        run.return_value.stdout = "https://github.com/Khaind2026/OnigiriDeX/pull/9#issuecomment-123"
+        result = publish_blocked_ap_status(
+            ValueError("Missing staged STOCK F741N boot-chain manifest: /home/user/private")
+        )
+        self.assertIn("github.com", result)
+        posted = run.call_args.kwargs["input"]
+        self.assertIn("AP_NOT_CREATED", posted)
+        self.assertIn("F741N_STOCK_AP_BOOT_INPUT_MISSING_OR_INVALID", posted)
+        self.assertNotIn("/home/", posted)
+        self.assertNotIn("private", posted)
+        self.assertIn("NO", posted)
 
     def test_requires_dex_patched_flag(self):
         (self.work / ".b6q-dex-patched").unlink()

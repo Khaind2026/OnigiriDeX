@@ -261,6 +261,50 @@ def publish_sanitized_ap_status(result):
     return completed.stdout.strip()
 
 
+def classify_build_blocker(error):
+    """Public allowlisted cause; never publish file paths, logs or proprietary data."""
+    raw = str(error).lower()
+    if "not enough free storage" in raw or "no space left on device" in raw:
+        return "OUTPUT_DISK_SPACE_INSUFFICIENT"
+    if "missing prepared" in raw or "work tree" in raw:
+        return "F741N_F956N_SOURCE_TREE_MISSING"
+    if "dex" in raw and ("patch" in raw or "port" in raw):
+        return "F956N_DEX_PORT_NOT_READY"
+    if "missing imported" in raw or "stock boot" in raw or "boot-chain" in raw:
+        return "F741N_STOCK_AP_BOOT_INPUT_MISSING_OR_INVALID"
+    if "super" in raw or "erofs" in raw or "lpmake" in raw:
+        return "SUPER_IMAGE_BUILD_OR_CHECKSUM_FAILED"
+    if "lz4" in raw:
+        return "AP_LZ4_COMPRESSION_FAILED"
+    if "odin" in raw or "tar" in raw:
+        return "AP_ARCHIVE_VERIFICATION_FAILED"
+    if isinstance(error, subprocess.CalledProcessError):
+        return "BUILD_SUBPROCESS_FAILED_DETAILS_LOCAL_ONLY"
+    return "AP_BUILD_FAILED_DETAILS_LOCAL_ONLY"
+
+
+def publish_blocked_ap_status(error):
+    gh = shutil.which("gh")
+    if not gh:
+        raise ValueError("gh CLI unavailable for opt-in status")
+    category = classify_build_blocker(error)
+    body = ("<!-- DUYKHAIDEX_F741N_AP_BUILD -->\n"
+            "### DuyKhaiDeX F741N — local AP build blocked\n\n"
+            "| Field | Status |\n| --- | --- |\n"
+            "| Packaging | AP_NOT_CREATED |\n"
+            "| Blocker category | " + category + " |\n"
+            "| Safe to flash | **NO** |\n\n"
+            "No Samsung firmware, local file paths or terminal logs published.\n")
+    proc = subprocess.run(
+        [gh, "pr", "comment", "9", "--repo", "Khaind2026/OnigiriDeX",
+         "--body-file", "-"],
+        input=body, text=True, capture_output=True, timeout=60, check=False,
+    )
+    if proc.returncode:
+        raise ValueError("Unable to publish sanitized build blocker")
+    return proc.stdout.strip()
+
+
 def main(argv=None):
     repo = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
@@ -281,6 +325,12 @@ def main(argv=None):
                        auto_build=not args.no_auto_build)
     except (ValueError, OSError, FileExistsError, subprocess.CalledProcessError,
             tarfile.TarError, json.JSONDecodeError) as exc:
+        if args.publish_public:
+            try:
+                url = publish_blocked_ap_status(exc)
+                print("SANITIZED AP BUILD BLOCKER PUBLISHED:", url)
+            except (OSError, ValueError, subprocess.TimeoutExpired) as publish_exc:
+                print("Unable to publish build blocker:", publish_exc, file=sys.stderr)
         parser.exit(1, "F741N engineering AP build failed: " + str(exc) + "\n")
     print("ENGINEERING AP CREATED:", args.output_dir / ARCHIVE_NAME)
     if args.publish_public:
