@@ -62,8 +62,8 @@ def verified_sources(repo):
                 raise ValueError("Symlink in Flip5 source: " + source)
             if not file.is_file():
                 continue
-            if not file.suffix in (".sh", ".py", ".patch", ".S", ".c", ".rc",
-                                   ".json", ".prop", ".txt", ""):
+            if file.suffix not in (".sh", ".py", ".patch", ".S", ".c", ".java",
+                                    ".rc", ".xml", ".json", ".prop", ".txt", ""):
                 raise ValueError("Unexpected file in source selection: " + source)
             if file.stat().st_size > MAX_SOURCE_BYTES:
                 raise ValueError("Unexpectedly large Flip5 source file")
