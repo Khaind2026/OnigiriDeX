@@ -32,6 +32,7 @@ REPORT_PATHS = (
     "out/b6q/analysis/f741n-stock-ramdisk-content.json",
     "out/b6q/analysis/f741n-f956n-selinux-triage.json",
     "out/b6q/analysis/f741n-f956n-secilc-host-compile.json",
+    "out/b6q/analysis/f741n-required-hal-contracts.json",
     "out/b6q/analysis/f741n-adb-bootloader-status.json",
 )
 TOOL_NAMES = ("python3", "git", "lz4", "avbtool", "dump.erofs",
@@ -181,6 +182,14 @@ def scan(root: Path):
     except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
         sections["vintf_mount_triage"] = issue("vintf_mount_triage", error)
 
+    # Conservative version/interface/instance audit when host checkvintf is
+    # unavailable. Never equate this partial result to a full libvintf pass.
+    try:
+        from audit_b6q_vintf_contracts import inspect as inspect_hal_contracts
+        sections["hal_contracts"] = inspect_hal_contracts(work)
+    except (ValueError, OSError, TypeError, KeyError, ImportError) as error:
+        sections["hal_contracts"] = issue("hal_contracts", error)
+
     # Try the official AOSP host libvintf check in the same one-shot pass.
     # Its missing binary is recorded as NOT_RUN, never a compatibility pass.
     try:
@@ -327,6 +336,9 @@ def summary_text(report):
         "AVB: " + str(sections["avb_descriptor_summary"]),
         "AOSP host checkvintf: " + str(
             sections.get("host_checkvintf", {}).get("status", "UNKNOWN")
+        ),
+        "Required HAL contract audit: " + str(
+            sections.get("hal_contracts", {}).get("status", "UNKNOWN")
         ),
         "Boot/mount/AVB gate: " + str(
             sections.get("boot_mount_avb_precheck", {}).get("status", "UNKNOWN")
