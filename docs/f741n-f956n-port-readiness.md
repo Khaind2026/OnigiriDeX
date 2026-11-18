@@ -169,3 +169,37 @@ against the preserved F741N vendor/odm rules, then perform an actual AOSP
 host checkvintf run using the correct SKU/APEX/kernel inputs. AVB/SELinux
 and bootability remain unresolved even when those steps pass. Do not flash
 the preview.
+
+
+## 2026-11-18 — stock first-stage ramdisk F741N evidence, verified from ZIP
+
+Compared `summary.json` from the later offline ZIP
+`DuyKhaiDeX_F741N_F956N_ALL_20261118_081422_761357.zip`.
+
+- `init_boot.img` LZ4: **12 CPIO entries**; no first-stage fstab
+  reported by the scanner.
+- `vendor_boot.img/fragment_0` LZ4: **432 CPIO entries**; stock
+  `fstab.qcom` is present and contains 11 relevant dynamic-mount
+  fs-type variants.
+- Comparing vendor ramdisk `fstab.qcom` against the extracted stock
+  F741N vendor `vendor/etc/fstab.qcom`: **all 7 partitions match**,
+  including **all 11** unique EROFS/F2FS/EXT4 variants and flags
+  `logical`, `first_stage_mount`, and `avb`.
+- Both sources contain three variants for `system`, three for
+  `system_dlkm`, and one each for product, system_ext, vendor, odm,
+  and vendor_dlkm.
+- The F741N AOSP host `checkvintf` phase still reports
+  `NOT_RUN_CHECKVINTF_MISSING`.
+- The modified Fold6-derived `system`, `product`, `system_ext`
+  overlap with *stock signed F741N BL root vbmeta hashtree metadata*.
+  The preview EROFS images were rebuilt without AVB signing;
+  **AVB acceptance is unverified**.
+
+Result: **F741N stock first-stage fstab metadata alignment is
+established.** Do not repeat this name/flag comparison unless the boot
+sources change. This does *not* certify Android boot, AVB verification,
+framework/vendor ABI, kernel/DTB/DTBO, SELinux or DeX behavior.
+
+The comparison is now automated by
+`scripts/compare_b6q_first_stage_fstab.py` and integrated into
+`scripts/diagnose_b6q_all.py`, with fail-closed synthetic tests.
