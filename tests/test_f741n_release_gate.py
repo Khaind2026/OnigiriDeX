@@ -59,6 +59,28 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(report["gates"]["combined_selinux_policy"]["status"],
                          "BLOCKED_HOST_SELINUX_COMPILE_FAILED")
 
+    def test_measured_root_bl_overlap_remains_blocked(self):
+        evidence = sections()
+        evidence["avb_trust_graph"] = {
+            "status": "BLOCKED_STOCK_BL_ROOT_HASHTREE_COVERS_REBUILT_SYSTEM",
+            "trust_graph": {
+                "modified_partition_signed_descriptor_overlap":
+                    ["product", "system", "system_ext"],
+            },
+        }
+        evidence["neverallow_rule_triage"] = {
+            "strict_compiler_status": "FAILED",
+            "suspected_violation_lines": 7,
+            "status": "NEVERALLOW_RULE_LOCATIONS_IDENTIFIED_PARTIALLY",
+        }
+        report = evaluate(evidence)
+        self.assertEqual(report["gates"]["avb_trust_chain"]["evidence"]
+                         ["stock_bl_trust_graph_status"],
+                         "BLOCKED_STOCK_BL_ROOT_HASHTREE_COVERS_REBUILT_SYSTEM")
+        self.assertEqual(report["gates"]["strict_neverallow_evidence"]["status"],
+                         "BLOCKED_NEVERALLOW_VIOLATION_ANALYSIS_PENDING")
+        self.assertFalse(report["release_allowed"])
+
     def test_missing_checkvintf_is_a_blocker(self):
         evidence = sections()
         evidence["host_checkvintf"]["status"] = "NOT_RUN_CHECKVINTF_MISSING"
