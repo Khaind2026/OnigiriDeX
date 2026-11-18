@@ -174,6 +174,18 @@ def scan(root: Path):
     except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
         sections["vintf_mount_triage"] = issue("vintf_mount_triage", error)
 
+    # Try the official AOSP host libvintf check in the same one-shot pass.
+    # Its missing binary is recorded as NOT_RUN, never a compatibility pass.
+    try:
+        from run_b6q_checkvintf import run_check
+        host_binary = shutil.which("checkvintf")
+        local_binary = root / "out/tools/bin/checkvintf"
+        if not host_binary and safe_file(local_binary):
+            host_binary = str(local_binary)
+        sections["host_checkvintf"] = run_check(work, tool=host_binary)
+    except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
+        sections["host_checkvintf"] = issue("host_checkvintf", error)
+
     prev_chain = root / "out/b6q/analysis/f741n-bl-vbmeta-chain.json"
     if safe_file(prev_chain):
         try:
@@ -256,6 +268,9 @@ def summary_text(report):
         "Target: SM-F741N   Donor: SM-F956N",
         "VINTF: " + vf,
         "AVB: " + str(sections["avb_descriptor_summary"]),
+        "AOSP host checkvintf: " + str(
+            sections.get("host_checkvintf", {}).get("status", "UNKNOWN")
+        ),
         "Boot: " + str(sections["boot_chain"].get("result", "UNKNOWN")),
         "Image stage: " + str(sections["stock_stage_validation"].get("result", "UNKNOWN")),
         "DeX work-tree flags: " + str(markers),
