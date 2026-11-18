@@ -70,6 +70,26 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertFalse(report["flashable"])
         self.assertEqual(report["target"], "SM-F741N")
 
+    def test_locked_f741n_state_blocks_release(self):
+        evidence = sections()
+        evidence["adb_device_bootstate"] = {
+            "status": "DEVICE_REPORTS_LOCKED_CUSTOM_ROM_BLOCKED",
+        }
+        result = evaluate(evidence)
+        self.assertEqual(result["gates"]["bootloader_state_and_rollback"]["status"],
+                         "BLOCKED_DEVICE_REPORTS_LOCKED")
+        self.assertFalse(result["odin_ap_allowed"])
+
+    def test_unlocked_property_not_falsely_attested(self):
+        evidence = sections()
+        evidence["adb_device_bootstate"] = {
+            "status": "DEVICE_REPORTS_UNLOCKED_NOT_ATTESTED",
+        }
+        result = evaluate(evidence)
+        self.assertEqual(result["gates"]["bootloader_state_and_rollback"]["status"],
+                         "BLOCKED_UNLOCKED_REPORTED_ROLLBACK_UNVERIFIED")
+        self.assertFalse(result["release_allowed"])
+
 
 if __name__ == "__main__":
     unittest.main()
