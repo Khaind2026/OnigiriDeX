@@ -44,6 +44,9 @@ class TriageTests(unittest.TestCase):
         self.assertFalse(report["flashable"])
         self.assertEqual(report["candidate_missing_hal_names_unverified"],
                          ["android.hardware.missing.hal"])
+        self.assertEqual(report["framework_matrix_count"], 1)
+        self.assertEqual(report["framework_hal_coverage"],
+                         "REQUIRED_HAL_NAMES_FOUND_IN_FRAMEWORK_MATRIX")
         self.assertEqual(report["device_manifest_hal_names"],
                          ["android.hardware.graphics.composer"])
         self.assertEqual(len(report["fstab_probes"]), 1)
@@ -61,6 +64,36 @@ class TriageTests(unittest.TestCase):
         (self.root / "system/system/etc/vintf/compatibility_matrix.xml").unlink()
         report = analyze(self.root)
         self.assertEqual(report["framework_matrix_files"], [])
+        self.assertEqual(report["framework_matrix_count"], 0)
+        self.assertIsNone(report["candidate_missing_hal_names_unverified"])
+        self.assertEqual(report["framework_hal_coverage"],
+                         "UNKNOWN_NO_FRAMEWORK_REQUIRED_HAL_NAMES")
+        self.assertFalse(report["flashable"])
+
+    def test_legacy_system_vintf_layout_is_discovered(self):
+        original = self.root / "system/system/etc/vintf/compatibility_matrix.xml"
+        legacy = self.root / "system/etc/vintf/compatibility_matrix.xml"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_bytes(original.read_bytes())
+        original.unlink()
+        report = analyze(self.root)
+        self.assertEqual(report["framework_matrix_count"], 1)
+        self.assertEqual(report["framework_hal_coverage"],
+                         "REQUIRED_HAL_NAMES_FOUND_IN_FRAMEWORK_MATRIX")
+        self.assertEqual(report["candidate_missing_hal_names_unverified"],
+                         ["android.hardware.missing.hal"])
+
+    def test_empty_required_hal_list_is_unknown_not_pass(self):
+        matrix = self.root / "system/system/etc/vintf/compatibility_matrix.xml"
+        matrix.write_text('<compatibility-matrix version="1.0" type="framework">'
+                          '<hal optional="true"><name>android.hardware.optional</name></hal>'
+                          '</compatibility-matrix>')
+        report = analyze(self.root)
+        self.assertEqual(report["framework_matrix_count"], 1)
+        self.assertEqual(report["framework_required_hal_names"], [])
+        self.assertIsNone(report["candidate_missing_hal_names_unverified"])
+        self.assertEqual(report["framework_hal_coverage"],
+                         "UNKNOWN_NO_FRAMEWORK_REQUIRED_HAL_NAMES")
         self.assertFalse(report["flashable"])
 
 
