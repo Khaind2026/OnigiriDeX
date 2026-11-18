@@ -1,5 +1,39 @@
 # DuyKhaiDeX experimental target: Samsung Galaxy Z Flip6 (b6q)
 
+## 2026-11-18: chính thức dùng khung Flip5 thay vì làm thêm kiểm tra
+
+**Mục tiêu:** port đúng logic đã build cho Flip5 F731N:
+- DeX được lấy từ nguồn Fold5 F946B, dự án giữ smali DeX tại
+  `target/b5q/patches/dex/smali`; source b6q đã phát lại các patch này
+  trên framework Samsung Fold6 F956N tương ứng với đời Flip6.
+- Root dựa vào source `external/patches/kernel`, `scripts/build_kernel.sh`,
+  `scripts/package_kernel.sh`, `onigiri/mods/essential` và
+  `onigiri/mods/rootmods`. **Không tái sử dụng boot.img, module hay offsets
+  SurfaceFlinger từ b5q Snapdragon 8 Gen 2** trên b6q Snapdragon 8 Gen 3.
+- Hệ thống build super giữ đúng nhóm phân vùng F741N.
+
+`scripts/stage_b6q_flip5_source_kit.py` đã được nối vào
+`bash scripts/port_b6q.sh all`. Nó tạo bộ mã nguồn có SHA256 ngay trong
+`out/target/b6q/SM-F741N/flip5-source-port-kit`, gồm smali DeX từ bản
+Flip5 chạy được, source native, KernelSU/root runtime và công cụ đóng gói
+kernel gốc. Chỉ chứa mã nguồn và tham chiếu pin binary root; **không chứa
+kernel cho F741N và không ghi firmware hoặc flash**.
+
+Để chỉ dựng bộ khung nguồn từ GitHub mà không đụng cây ROM đã patch:
+```bash
+python3 scripts/stage_b6q_flip5_source_kit.py --inspect
+python3 scripts/stage_b6q_flip5_source_kit.py
+```
+
+**Đã có:** khung DeX/smali + root/kernel source Flip5 để port; các bản sửa
+DeX trên F956N và super preview ở cây ROM b6q trước đó.
+**Chưa có:** build kernel F741N với KSU/SUSFS và kiểm tra ABI; không thể
+coi bản SM8550 từ Flip5 là kernel F741N. Bản ROM/DeX chưa boot trên máy
+F741N. Phần việc này phải dựa vào source SM8650/Samsung tương thích
+với firmware F741N, không tự tạo kernel từ mã nguồn sai đời.
+
+---
+
 ## Direct b5q → b6q ROM port driver (current route)
 
 This port now **reuses the working Flip5 OnigiriDeX build architecture**
