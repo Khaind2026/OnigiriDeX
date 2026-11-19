@@ -668,3 +668,52 @@ this is not a reason to bypass Android verified boot. Even when
 descriptors are readable, `avbtool info_image` does not verify that the
 stock trust chain accepts the rebuilt F956N system/product/system_ext.
 Do not flash the engineering preview.
+
+
+## 2026-11-19 — Chuỗi build kernel root F741N riêng cho SM8650
+
+Bản AP kỹ thuật đầu tiên đã được tạo từ F956N DeX + F741N gốc:
+`DuyKhaiDeX_F741N_F956N_ENGINEERING_AP_NOT_FOR_FLASH.tar.md5`.
+Trong bản đó `boot.img` vẫn là stock, chưa có KernelSU/SUSFS.
+
+Mã nguồn kernel Flip5 nằm ở submodule `external/kernel` và build cho
+`SM8550/b5q` (Android 13 GKI 5.15). **Không ghép kernel đó vào F741N.**
+
+### Pipeline root kernel mới
+
+Hai script mới chỉ làm việc với mã nguồn Samsung **đúng firmware**
+`SM-F741N / F741NKSS2BYGB / Android 15 One UI 7`:
+
+1. `scripts/build_b6q_ksu_kernel.py` — yêu cầu mã nguồn gốc có
+   `build_kernel_GKI.sh`, target `b6q_*`, chipset `pineapple`,
+   và build number **F741NKSS2BYGB**. Có thể chạy native build khi
+   được yêu cầu. Phân vùng kernel đầu ra phải là `Image` ARM64 có
+   `CONFIG_KSU=y`, `CONFIG_KSU_SUSFS=y`, `CONFIG_MODVERSIONS=y`.
+   Xuất `Image`, `.config`, `kernel.release` và manifest nguồn.
+2. `scripts/package_b6q_ksu_kernel.py` — dùng `magiskboot` repack
+   **boot.img gốc F741N** với `Image` mới. Giữ nguyên `vendor_boot`,
+   DTBO, modem và các partition phần cứng khác.
+3. `scripts/build_b6q_engineering_ap.py` — với tùy chọn
+   `--root-kernel-dir`, nhận boot artifact vừa kiểm tra và tạo
+   **AP thử nghiệm thứ hai** có tên
+   `DuyKhaiDeX_F741N_F956N_KSU_ENGINEERING_AP_NOT_FOR_FLASH.tar.md5`.
+   Nó không ghi đè AP gốc 9,41 GB.
+
+Khi source kernel F741N khớp phiên bản đã được chuẩn bị trong Debian:
+
+```bash
+cd ~/OnigiriDeX
+python3 scripts/build_b6q_ksu_kernel.py --source-root /mnt/d/F741N-OneUI7-kernel --build --package-boot
+python3 scripts/build_b6q_engineering_ap.py --build --root-kernel-dir out/target/b6q/kernel-ksu-engineering --output-dir /mnt/d/DuyKhaiDeX-build --publish-public
+```
+
+**Không dùng script với source F741B One UI 8, kernel b5q, hoặc source
+không đúng build number.** GitHub chỉ chứa code/kiểm thử giả lập, chưa có
+kernel OEM đúng bản F741N đang lưu trên máy chủ. Chưa thể chứng thực ABI
+các module vendor hoặc nguồn gốc Samsung bằng chỉ tên build script.
+
+Hai bản AP đều chỉ là kỹ thuật: stock F741N BL có signed AVB
+hashtree descriptor đối với các phân vùng `system/product/system_ext`
+đã sửa. Không có chữ ký được bootloader tin cậy, không có thử nghiệm
+F741N thực, nên **không được flash hoặc coi là ROM hoàn thiện**. Không
+tắt/bỏ qua xác minh boot để thử.
