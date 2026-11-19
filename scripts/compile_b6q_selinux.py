@@ -205,6 +205,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work-dir", type=Path,
                         default=repo / "out/target/b6q/SM-F741N/work_dir")
+    parser.add_argument("--require-strict", action="store_true",
+                        help="Print strict compiler diagnostics locally and require both passes")
     parser.add_argument("--tool", default=None, help="Optional local secilc binary")
     parser.add_argument("--output", type=Path,
                         default=repo / "out/b6q/analysis/f741n-f956n-secilc-host-compile.json")
@@ -220,6 +222,19 @@ def main(argv=None):
     print("F741N/F956N SELinux:", report["status"])
     print("Host neverallow:", report.get("neverallow_check", "NOT_RUN"))
     print("Report:", args.output)
+    if args.require_strict:
+        passes = report.get("passes", {})
+        for phase in ("init_equivalent", "strict_neverallow"):
+            outcome = passes.get(phase, {})
+            if outcome.get("status") != "COMPILED":
+                print(f"{phase}: {outcome.get('status', 'NOT_RUN')}", file=sys.stderr)
+                for field in ("stderr_tail", "stdout_tail"):
+                    if outcome.get(field):
+                        print(outcome[field], file=sys.stderr)
+        if report.get("neverallow_check") != "PASSED_HOST_ONLY" or report.get("status") != "HOST_SELINUX_COMPILE_PASSED_RUNTIME_UNVERIFIED":
+            if report.get("reason"):
+                print(report["reason"], file=sys.stderr)
+            return 2
     print("No ROM image or device has been modified. No Odin AP. DO NOT FLASH.")
     return 0
 
