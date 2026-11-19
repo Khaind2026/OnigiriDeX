@@ -30,6 +30,7 @@ MODEL = "SM-F741N"
 DONOR = "SM-F956N"
 STOCK_BUILD = "F741NKSS2BYGB"
 ARCHIVE_NAME = "DuyKhaiDeX_F741N_F956N_ENGINEERING_AP_NOT_FOR_FLASH.tar.md5"
+ROOT_AP_NAME = "DuyKhaiDeX_F741N_F956N_KSU_ENGINEERING_AP_NOT_FOR_FLASH.tar.md5"
 MAX_BOOT_BYTES = 1024 * 1024 * 1024
 SPARSE_MAGIC = bytes.fromhex("3aff26ed")
 MIN_FREE_BUFFER = 512 * 1024 * 1024
@@ -189,45 +190,96 @@ def assemble_ap(stock, super_img, output, *, lz4):
             "bytes": output.stat().st_size, "members": list(archive_entries)}
 
 
-def build(repo, output_dir, *, auto_build=True, lz4="lz4"):
+def verified_f741n_root_boot(artifacts, stock_boot):
+    """Check the independently built F741N boot matches this stock boot."""
+    if artifacts.is_symlink() or not artifacts.is_dir():
+        raise ValueError("F741N root kernel artifact directory missing")
+    manifest = artifacts / "manifest.json"
+    if manifest.is_symlink() or not manifest.is_file():
+        raise ValueError("Root boot manifest not found")
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    if (data.get("status") != "F741N_KSU_BOOT_REPACKED_NOT_BOOT_VERIFIED"
+            or data.get("model") != MODEL
+            or data.get("firmware_build") != STOCK_BUILD
+            or data.get("avb_trust_verified") is not False
+            or data.get("flashable") is not False):
+        raise ValueError("Root boot source model/build or verification state invalid")
+    if data.get("stock_boot_sha256") != stock_boot["sha256"]:
+        raise ValueError("Root kernel boot was not repacked from this F741N stock boot")
+    file = artifacts / "boot_F741N_KSU_SUSFS_ENGINEERING_NOT_FOR_FLASH.img"
+    if file.is_symlink() or not file.is_file():
+        raise ValueError("F741N root boot image missing")
+    size = file.stat().st_size
+    if not 512 <= size <= stock_boot["bytes"]:
+        raise ValueError("F741N root boot exceeds stock boot partition size")
+    with file.open("rb") as reader:
+        if reader.read(8) != b"ANDROID!":
+            raise ValueError("Root F741N boot header invalid")
+    actual = image_sha256(file)
+    if (actual != data.get("root_boot_sha256")
+            or size != data.get("root_boot_bytes")
+            or actual == stock_boot["sha256"]):
+        raise ValueError("Root F741N boot image checksum invalid or unchanged")
+    return {"path": file, "bytes": size, "sha256": actual}
+
+
+def build(repo, output_dir, *, auto_build=True, lz4="lz4",
+          root_kernel_dir=None):
     work = repo / "out/target/b6q/SM-F741N/work_dir"
     super_img = expected_super(work, repo)
     boot_dir = repo / "out/b6q/analysis/f741n-stock-boot-chain"
     output_dir.mkdir(parents=True, exist_ok=True)
     if output_dir.is_symlink():
         raise ValueError("Output folder must not be a symlink")
-    ap = output_dir / ARCHIVE_NAME
+    archive_name = ROOT_AP_NAME if root_kernel_dir else ARCHIVE_NAME
+    ap = output_dir / archive_name
     if ap.exists() or ap.is_symlink():
         raise FileExistsError("Existing F741N AP will not be overwritten: " + str(ap))
     stock, super_info = ensure_local_inputs(
         repo, boot_dir, super_img, auto_build=auto_build
     )
+    original_boot = {k: {"bytes": v["bytes"], "sha256": v["sha256"]}
+                     for k, v in stock.items()}
+    root_boot_info = None
+    if root_kernel_dir is not None:
+        root_boot_info = verified_f741n_root_boot(root_kernel_dir, stock["boot.img"])
+        stock = {**stock, "boot.img": root_boot_info}
     artifact = assemble_ap(stock, super_img, ap, lz4=lz4)
     manifest = {
-        "status": "ENGINEERING_ODIN_AP_CREATED_NOT_FLASHABLE",
+        "status": (
+            "ENGINEERING_KSU_BOOT_ODIN_AP_CREATED_NOT_FLASHABLE"
+            if root_boot_info else "ENGINEERING_ODIN_AP_CREATED_NOT_FLASHABLE"
+        ),
         "model": MODEL, "donor": DONOR,
         "donor_framework": ["system", "product", "system_ext"],
         "target_hardware": ["vendor", "odm", "vendor_dlkm", "system_dlkm"],
-        "boot_source": "STOCK F741N ONLY", "stock_firmware_build": STOCK_BUILD,
-        "stock_boot_images": {k: {"bytes": v["bytes"], "sha256": v["sha256"]}
-                              for k, v in stock.items()},
+        "boot_source": (
+            "EXPERIMENTAL_F741N_KSU_STOCK_REPACK_NOT_RUNTIME_VERIFIED"
+            if root_boot_info else "STOCK F741N ONLY"
+        ), "stock_firmware_build": STOCK_BUILD,
+        "stock_boot_images": original_boot,
+        "experimental_root_boot": (
+            {"bytes": root_boot_info["bytes"], "sha256": root_boot_info["sha256"]}
+            if root_boot_info else None
+        ),
         "sparse_super": {"file": super_img.name, **super_info},
         "archive": artifact,
-        "kernel_root_built": False,
+        "kernel_root_built": bool(root_boot_info),
+        "kernel_root_functionality_verified": False,
         "kernel_su_from_flip5_reused_on_flip6": False,
         "dex_boot_verified": False, "avb_device_trust_verified": False,
         "bootable": False, "flashable": False,
         "reasons": [
             "F741N stock BL root vbmeta has signed hashtree descriptors directly over modified system/product/system_ext",
             "DeX on F956N and SELinux/AVB have not passed complete device verification",
-            "STOCK F741N boot is not a newly compiled F741N KernelSU kernel",
+            "KernelSU boot, if selected, is not device-verified; stock boot otherwise remains unrooted",
         ],
     }
-    (output_dir / (ARCHIVE_NAME + ".json")).write_text(
+    (output_dir / (archive_name + ".json")).write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
-    (output_dir / (ARCHIVE_NAME + ".sha256")).write_text(
-        artifact["sha256"] + "  " + ARCHIVE_NAME + "\n", encoding="ascii"
+    (output_dir / (archive_name + ".sha256")).write_text(
+        artifact["sha256"] + "  " + archive_name + "\n", encoding="ascii"
     )
     return manifest
 
@@ -245,7 +297,8 @@ def publish_sanitized_ap_status(result):
             "| Model | SM-F741N |\n"
             "| AP size (bytes) | " + str(int(artifact["bytes"])) + " |\n"
             "| SHA-256 | `" + artifact["sha256"] + "` |\n"
-            "| Boot | STOCK_F741N_NOT_KERNELSU |\n"
+            "| Boot | " + ("F741N_KSU_BOOT_EXPERIMENTAL_NOT_VERIFIED"
+                         if result["kernel_root_built"] else "STOCK_F741N_NOT_KERNELSU") + " |\n"
             "| AVB | ROOT_SIGNED_HASHTREE_OVERLAP_UNRESOLVED |\n"
             "| Boot/device verified | NO |\n"
             "| Safe to flash | **NO** |\n\n"
@@ -314,6 +367,8 @@ def main(argv=None):
                         help="Opt in to post AP package metadata, NOT the file, to GitHub PR #9")
     parser.add_argument("--no-auto-build", action="store_true",
                         help="Do not stage F741N boot or construct super automatically")
+    parser.add_argument("--root-kernel-dir", type=Path, default=None,
+                        help="Optional verified F741N KSU boot artifact; never reuses Flip5 boot")
     parser.add_argument("--output-dir", type=Path, default=repo / "out/b6q/build",
                         help="Output folder (must have free space for compression)")
     args = parser.parse_args(argv)
@@ -322,7 +377,8 @@ def main(argv=None):
         return 0
     try:
         result = build(repo, args.output_dir,
-                       auto_build=not args.no_auto_build)
+                       auto_build=not args.no_auto_build,
+                       root_kernel_dir=args.root_kernel_dir)
     except (ValueError, OSError, FileExistsError, subprocess.CalledProcessError,
             tarfile.TarError, json.JSONDecodeError) as exc:
         if args.publish_public:
@@ -332,7 +388,7 @@ def main(argv=None):
             except (OSError, ValueError, subprocess.TimeoutExpired) as publish_exc:
                 print("Unable to publish build blocker:", publish_exc, file=sys.stderr)
         parser.exit(1, "F741N engineering AP build failed: " + str(exc) + "\n")
-    print("ENGINEERING AP CREATED:", args.output_dir / ARCHIVE_NAME)
+    print("ENGINEERING AP CREATED:", args.output_dir / result["archive"]["path"])
     if args.publish_public:
         try:
             published = publish_sanitized_ap_status(result)
@@ -340,7 +396,7 @@ def main(argv=None):
         except (ValueError, OSError, subprocess.TimeoutExpired) as error:
             print("AP CREATED, but status publication failed:", error, file=sys.stderr)
     print("Checksum:", result["archive"]["sha256"])
-    print("STOCK F741N BOOT ONLY. NO KERNELSU BUILD. AVB UNVERIFIED.")
+    print("F741N boot source:", result["boot_source"], "AVB UNVERIFIED.")
     print("THIS ODIN ARCHIVE IS NOT FLASH SAFE. DO NOT FLASH.")
     return 0
 
