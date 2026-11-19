@@ -10,8 +10,8 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from build_b6q_engineering_ap import (
-    ARCHIVE_NAME, STOCK_BOOT_ORDER, IMAGE_MAGIC, build, verify_input_super,
-    verify_stock_boot, classify_build_blocker, publish_blocked_ap_status,
+    ARCHIVE_NAME, ROOT_AP_NAME, STOCK_BOOT_ORDER, IMAGE_MAGIC, build,
+    verify_input_super, verify_stock_boot, verified_f741n_root_boot, classify_build_blocker, publish_blocked_ap_status,
 )
 from import_fw import verify_odin_package
 from stage_b6q_boot_chain import ASSETS
@@ -96,6 +96,61 @@ class F741NEngineeringAPTests(unittest.TestCase):
         self.assertTrue((self.out / (ARCHIVE_NAME + ".sha256")).is_file())
         with self.assertRaises(FileExistsError):
             build(self.repo, self.out, auto_build=False)
+
+    def _make_rooted_boot_artifact(self):
+        folder = self.repo / "out/target/b6q/kernel-ksu-engineering"
+        folder.mkdir(parents=True)
+        stock_bytes = (self.boot / "boot.img").read_bytes()
+        rooted = bytearray(stock_bytes)
+        rooted[-1] ^= 1
+        name = "boot_F741N_KSU_SUSFS_ENGINEERING_NOT_FOR_FLASH.img"
+        (folder / name).write_bytes(rooted)
+        (folder / "manifest.json").write_text(json.dumps({
+            "status": "F741N_KSU_BOOT_REPACKED_NOT_BOOT_VERIFIED",
+            "model": "SM-F741N",
+            "firmware_build": "F741NKSS2BYGB",
+            "stock_boot_sha256": hashlib.sha256(stock_bytes).hexdigest(),
+            "root_boot_sha256": hashlib.sha256(rooted).hexdigest(),
+            "root_boot_bytes": len(rooted),
+            "avb_trust_verified": False,
+            "flashable": False,
+        }))
+        return folder, name
+
+    @mock.patch("build_b6q_engineering_ap.shutil.which", return_value="/usr/bin/lz4")
+    @mock.patch("build_b6q_engineering_ap.compress_image")
+    def test_separate_rooted_ap_does_not_modify_existing_stock_ap(self, comp, _):
+        comp.side_effect = self.fake_compress
+        original = build(self.repo, self.out, auto_build=False)
+        source, root_name = self._make_rooted_boot_artifact()
+        rooted = build(self.repo, self.out, auto_build=False,
+                       root_kernel_dir=source)
+        self.assertFalse(original["kernel_root_built"])
+        self.assertTrue(rooted["kernel_root_built"])
+        self.assertFalse(rooted["kernel_root_functionality_verified"])
+        self.assertFalse(rooted["flashable"])
+        self.assertNotEqual(ROOT_AP_NAME, ARCHIVE_NAME)
+        self.assertTrue((self.out / ROOT_AP_NAME).is_file())
+        self.assertTrue((self.out / ARCHIVE_NAME).is_file())
+        verify_odin_package(self.out / ROOT_AP_NAME)
+        with tarfile.open(self.out / ROOT_AP_NAME, "r:") as root_tar:
+            boot_data = root_tar.extractfile("boot.img.lz4").read()
+            self.assertEqual(boot_data, b"STUB" + (source / root_name).read_bytes())
+        with tarfile.open(self.out / ARCHIVE_NAME, "r:") as stock_tar:
+            boot_data = stock_tar.extractfile("boot.img.lz4").read()
+            self.assertEqual(boot_data, b"STUB" + (self.boot / "boot.img").read_bytes())
+
+    def test_wrong_stock_boot_rooted_artifact_rejected(self):
+        folder, name = self._make_rooted_boot_artifact()
+        manifest = folder / "manifest.json"
+        obj = json.loads(manifest.read_text())
+        obj["stock_boot_sha256"] = "0" * 64
+        manifest.write_text(json.dumps(obj))
+        with self.assertRaisesRegex(ValueError, "not repacked from this"):
+            verified_f741n_root_boot(
+                folder, {"sha256": hashlib.sha256((self.boot / "boot.img").read_bytes()).hexdigest(),
+                         "bytes": (self.boot / "boot.img").stat().st_size}
+            )
 
     def test_rejects_wrong_donor_source(self):
         (self.work / "port-origin.json").write_text(json.dumps({
