@@ -48,6 +48,45 @@ def select_root(work, part):
     return matches[0] if len(matches) == 1 else None
 
 
+def policy_hashes(roots):
+    """Compare the three framework hash sidecars with the target's recorded values."""
+    for owner in ("odm", "vendor"):
+        root = roots.get(owner)
+        if root is None:
+            continue
+        binary = root / "etc/selinux/precompiled_sepolicy"
+        if binary.is_symlink():
+            return {"owner": owner, "status": "UNKNOWN_SYMLINK"}
+        if binary.is_file() and binary.stat().st_size:
+            break
+    else:
+        return {"status": "NO_PRECOMPILED_POLICY_FOUND"}
+
+    pairs = {}
+    for part, prefix in (("system", "plat"), ("system_ext", "system_ext"), ("product", "product")):
+        if roots.get(part) is None:
+            pairs[part] = "UNKNOWN_PARTITION_ROOT"
+            continue
+        name = prefix + "_sepolicy_and_mapping.sha256"
+        framework = roots[part] / "etc/selinux" / name
+        recorded = binary.with_name(binary.name + "." + name)
+        if framework.is_symlink() or recorded.is_symlink():
+            pairs[part] = "UNKNOWN_SYMLINK"
+        elif not framework.exists() and not recorded.exists() and part != "system":
+            pairs[part] = "BOTH_ABSENT_OPTIONAL"
+        elif not all(path.is_file() for path in (framework, recorded)):
+            pairs[part] = "MISSING_HASH"
+        elif any(path.stat().st_size > 128 for path in (framework, recorded)):
+            pairs[part] = "INVALID_HASH"
+        else:
+            values = [path.read_bytes().rstrip(b"\n") for path in (framework, recorded)]
+            if not all(re.fullmatch(b"[0-9a-f]{64}", value) for value in values):
+                pairs[part] = "INVALID_HASH"
+            else:
+                pairs[part] = "MATCH" if values[0] == values[1] else "MISMATCH"
+    return {"owner": owner, "pairs": pairs}
+
+
 def inspect(work):
     if work.is_symlink() or not work.is_dir():
         raise ValueError("F741N work tree missing")
@@ -126,6 +165,7 @@ def inspect(work):
         "donor_system_compat_mapping_found": mapping_found,
         "donor_compat_mapping": str(mapping.relative_to(work)) if mapping else None,
         "policy_components": results,
+        "precompiled_policy_hashes": policy_hashes(roots),
         "file_contexts_present": fs_configs,
         "missing_required_components": missing_required,
         "secilc_available": bool(shutil.which("secilc")),
@@ -158,6 +198,7 @@ def main(argv=None):
     print("F741N vendor plat policy version:", result["stock_f741n_vendor_policy_version"])
     print("F956N matching framework mapping:", result["donor_system_compat_mapping_found"])
     print("STATUS:", result["status"])
+    print("Precompiled policy hash comparison:", json.dumps(result["precompiled_policy_hashes"]))
     print("Report:", args.output)
     print("No firmware modified. No Odin AP. DO NOT FLASH.")
     return 0
