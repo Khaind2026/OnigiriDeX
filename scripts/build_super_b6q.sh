@@ -20,15 +20,21 @@ if [[ -f "$WORK_DIR/.b6q-settings-patched" ]]; then
 else
     OUTPUT="$OUTPUT_DIR/DuyKhaiDeX_F741N_SUPER_PREVIEW_NOT_FOR_FLASH.img"
 fi
+stock_hardware=false
+if [[ ${1:-} == --build-stock-hardware ]]; then
+    stock_hardware=true
+    OUTPUT="${OUTPUT%.img}_STOCK_HW.img"
+fi
 PARTITIONS=(system product system_ext vendor odm vendor_dlkm system_dlkm)
 
 if [[ "$#" == 1 && "$1" == --help ]]; then
-    echo "Usage: bash scripts/build_super_b6q.sh [--build]"
+    echo "Usage: bash scripts/build_super_b6q.sh [--build|--build-stock-hardware]"
     echo "No args = readiness check. --build = repack 7 EROFS images using b5q pipeline."
+    echo "--build-stock-hardware preserves the four staged Flip6 hardware images byte for byte."
     echo "Produces only super PREVIEW; do not flash."
     exit 0
 fi
-if (( $# > 1 )) || [[ "$#" == 1 && "$1" != --build ]]; then
+if (( $# > 1 )) || [[ "$#" == 1 && "$1" != --build && "$1" != --build-stock-hardware ]]; then
     echo "Invalid argument; use --help" >&2
     exit 2
 fi
@@ -93,18 +99,31 @@ trap 'rm -rf -- "$STAGE"' EXIT
 SUPER_COMMAND=(lpmake --metadata-size 65536 --super-name super --metadata-slots 2
     --device "super:$SUPER_SIZE" --group "qti_dynamic_partitions:$GROUP_LIMIT"
     --sparse --output "$STAGE/super.img")
+if $stock_hardware; then
+    python3 "$SRC_DIR/scripts/verify_b6q_stage.py" --output "$STAGE/stage-check.json"
+fi
+declare -A inputs
 OCCUPIED=0
 for part in system product system_ext vendor odm vendor_dlkm system_dlkm; do
-    echo "- Building b6q $part with scripts/build_fs_image.sh"
-    "$SRC_DIR/scripts/build_fs_image.sh" erofs --no-avb -o "$STAGE/$part.img"         "$WORK_DIR/$part" "$WORK_DIR/configs/file_context-$part"         "$WORK_DIR/configs/fs_config-$part"
-    SIZE="$(stat -c %s "$STAGE/$part.img")"
+    case "$stock_hardware:$part" in
+        true:vendor|true:odm|true:vendor_dlkm|true:system_dlkm)
+            inputs[$part]="$OUT_DIR/b6q/extracted/SM-F741N/$part.img"
+            echo "- Using staged F741N $part.img byte for byte"
+            ;;
+        *)
+            inputs[$part]="$STAGE/$part.img"
+            "$SRC_DIR/scripts/build_fs_image.sh" erofs --no-avb -o "${inputs[$part]}" \
+                "$WORK_DIR/$part" "$WORK_DIR/configs/file_context-$part" "$WORK_DIR/configs/fs_config-$part"
+            ;;
+    esac
+    SIZE="$(stat -c %s "${inputs[$part]}")"
     (( SIZE > 0 )) || { echo "Invalid $part image" >&2; exit 1; }
     OCCUPIED=$((OCCUPIED + SIZE))
     (( OCCUPIED <= GROUP_LIMIT )) || {
         echo "Built images exceed actual F741N group limit" >&2; exit 1;
     }
     SUPER_COMMAND+=(--partition "$part:readonly:$SIZE:qti_dynamic_partitions"
-                    --image "$part=$STAGE/$part.img")
+                    --image "$part=${inputs[$part]}")
 done
 
 echo "- Packing super.img using F741N's real geometry"
@@ -115,11 +134,11 @@ echo "- Unpacking all 7 partitions in one pass (avoids repeated 13 GiB reads)"
 lpunpack "$STAGE/super.raw.img" "$STAGE/unpacked"
 for part in system product system_ext vendor odm vendor_dlkm system_dlkm; do
     echo "- Verifying packed $part"
-    cmp "$STAGE/$part.img" "$STAGE/unpacked/$part.img" || {
+    cmp "${inputs[$part]}" "$STAGE/unpacked/$part.img" || {
         echo "Packed $part differs from original built image" >&2
         exit 1
     }
-    rm "$STAGE/unpacked/$part.img"
+    if ! $stock_hardware; then rm "$STAGE/unpacked/$part.img"; fi
 done
 
 mv "$STAGE/super.img" "$OUTPUT"
@@ -134,4 +153,8 @@ Rebuilt total bytes: $OCCUPIED
 NOT FOR FLASH: no AVB resolution, kernel/boot-chain validation or real device boot tests.
 EOF
 echo "ENGINEERING SUPER PREVIEW BUILT AND RE-UNPACK VERIFIED: $OUTPUT"
+if $stock_hardware; then
+    cp "$OUT_DIR/b6q/analysis/f741n-stock-boot-chain/vbmeta_system.img" "$STAGE/unpacked/"
+    avbtool verify_image --image "$STAGE/unpacked/vbmeta_system.img" 2>&1 | tee "$OUTPUT.avb.log"
+fi
 echo "No flashable Odin AP was made. DO NOT FLASH THE PREVIEW."
