@@ -25,12 +25,17 @@ def compare(info, folder):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("pid", type=int)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("pid", nargs="?", type=int)
+    source.add_argument("--image", type=Path)
     args = parser.parse_args()
-    cmd = Path(f"/proc/{args.pid}/cmdline").read_bytes().decode().split("\0")
-    if "verify_image" not in cmd or "--image" not in cmd:
-        raise ValueError("PID no longer identifies the verifier")
-    vb = Path(cmd[cmd.index("--image") + 1])
+    if args.image:
+        vb = args.image.resolve()
+    else:
+        cmd = Path(f"/proc/{args.pid}/cmdline").read_bytes().decode().split("\0")
+        if "verify_image" not in cmd or "--image" not in cmd:
+            raise ValueError("PID no longer identifies the verifier")
+        vb = Path(cmd[cmd.index("--image") + 1])
     if not vb.is_absolute() or vb.name != "vbmeta_system.img":
         raise ValueError("Expected an absolute vbmeta_system.img path")
     tool = Path(__file__).resolve().parents[1] / "out/tools/bin/avbtool"
