@@ -155,6 +155,7 @@ EOF
 echo "ENGINEERING SUPER PREVIEW BUILT AND RE-UNPACK VERIFIED: $OUTPUT"
 if $stock_hardware; then
     cp "$OUT_DIR/b6q/analysis/f741n-stock-boot-chain/vbmeta_system.img" "$STAGE/unpacked/"
-    avbtool verify_image --image "$STAGE/unpacked/vbmeta_system.img" 2>&1 | tee "$OUTPUT.avb.log"
+    python3 "$SRC_DIR/scripts/bygb_verify_lengths.py" --image "$STAGE/unpacked/vbmeta_system.img" 2>&1 | tee "$OUTPUT.avb.log"
+    avbtool verify_image --image "$STAGE/unpacked/vbmeta_system.img" 2>&1 | tee -a "$OUTPUT.avb.log"
 fi
 echo "No flashable Odin AP was made. DO NOT FLASH THE PREVIEW."
